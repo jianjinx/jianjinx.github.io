@@ -807,44 +807,19 @@ a:hover { color: var(--accent-soft); }
       </div>
       <div class="editor-form">
         <div class="settings-section" style="margin-top:0; padding-top:0; border-top:none;">
-          <h3>GitHub 同步</h3>
+          <h3>GitHub Token</h3>
           <p style="font-size:.82rem; color:var(--muted); margin-bottom:1rem; line-height:1.8;">
-            配置 GitHub 仓库后，文章将同步到云端，<strong style="color:var(--fg-soft);">所有访客都能看到</strong>。<br>
-            不配置则仅使用本地存储（只有当前浏览器可见）。
+            仓库已配置为 <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--accent);">jianjinx/xingxw-data</code>。<br>
+            填入 Token 后才能发布/编辑/删除文章。Token 仅存在你的浏览器本地。
           </p>
           <div class="form-group">
-            <label>GitHub 用户名</label>
-            <input type="text" class="form-input" id="cfgGithubUser" placeholder="如 jianjinx">
-          </div>
-          <div class="form-group">
-            <label>仓库名</label>
-            <input type="text" class="form-input" id="cfgGithubRepo" placeholder="如 xingxw-data">
-          </div>
-          <div class="form-group">
-            <label>分支名</label>
-            <input type="text" class="form-input" id="cfgGithubBranch" placeholder="main" value="main">
-          </div>
-          <div class="form-group">
             <label>Personal Access Token</label>
-            <input type="password" class="form-input" id="cfgGithubToken" placeholder="ghp_... (只需 repo 权限)">
+            <input type="password" class="form-input" id="cfgGithubToken" placeholder="ghp_...">
             <div class="form-hint">
-              在 GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token 生成，勾选 <code>repo</code> 权限。
+              GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → 勾选 <code>repo</code>
             </div>
           </div>
-          <div class="settings-row">
-            <div>
-              <div>同步状态</div>
-              <div class="desc" id="cfgSyncStatus">未连接</div>
-            </div>
-            <button class="btn btn-ghost btn-sm" onclick="saveGithubConfig()">保存配置</button>
-          </div>
-          <div class="settings-row">
-            <div>
-              <div>手动同步</div>
-              <div class="desc">从 GitHub 拉取最新文章</div>
-            </div>
-            <button class="btn btn-ghost btn-sm" onclick="syncFromGithub(true)">拉取</button>
-          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveGithubToken()">保存 Token</button>
         </div>
 
         <div class="settings-section">
@@ -951,69 +926,45 @@ const state = {
 const STORAGE_KEYS = {
   articles: 'xingxw_articles',
   pwdHash: 'xingxw_pwd_hash',
-  github: 'xingxw_github_config',
+  token: 'xingxw_github_token',
 };
 
-// ===== GitHub Config =====
-function getGithubConfig() {
-  const data = localStorage.getItem(STORAGE_KEYS.github);
-  if (!data) return null;
-  try { return JSON.parse(data); } catch(e) { return null; }
+// ===== GitHub Config (read is public, write needs token) =====
+const GITHUB_USER = 'jianjinx';
+const GITHUB_REPO = 'xingxw-data';
+const GITHUB_BRANCH = 'main';
+
+function getGithubToken() {
+  return localStorage.getItem(STORAGE_KEYS.token) || '';
 }
 
-function saveGithubConfig() {
-  const cfg = {
-    user: document.getElementById('cfgGithubUser').value.trim(),
-    repo: document.getElementById('cfgGithubRepo').value.trim(),
-    branch: document.getElementById('cfgGithubBranch').value.trim() || 'main',
-    token: document.getElementById('cfgGithubToken').value.trim(),
-  };
-  if (!cfg.user || !cfg.repo) {
-    showToast('请填写 GitHub 用户名和仓库名', 'error');
-    return;
-  }
-  localStorage.setItem(STORAGE_KEYS.github, JSON.stringify(cfg));
-  showToast('配置已保存，正在连接...', 'success');
-  syncFromGithub(true);
-}
-
-function loadGithubConfigForm() {
-  const cfg = getGithubConfig();
-  if (cfg) {
-    document.getElementById('cfgGithubUser').value = cfg.user || '';
-    document.getElementById('cfgGithubRepo').value = cfg.repo || '';
-    document.getElementById('cfgGithubBranch').value = cfg.branch || 'main';
-    document.getElementById('cfgGithubToken').value = cfg.token || '';
+function saveGithubToken() {
+  const token = document.getElementById('cfgGithubToken').value.trim();
+  if (token) {
+    localStorage.setItem(STORAGE_KEYS.token, token);
+    showToast('Token 已保存', 'success');
+  } else {
+    localStorage.removeItem(STORAGE_KEYS.token);
+    showToast('Token 已清除', 'success');
   }
 }
 
 function githubRawUrl() {
-  const cfg = getGithubConfig();
-  if (!cfg) return null;
-  return `https://raw.githubusercontent.com/${cfg.user}/${cfg.repo}/${cfg.branch}/articles.json`;
+  return `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/articles.json`;
 }
 
 function githubApiUrl() {
-  const cfg = getGithubConfig();
-  if (!cfg) return null;
-  return `https://api.github.com/repos/${cfg.user}/${cfg.repo}/contents/articles.json`;
+  return `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/articles.json`;
 }
 
 async function syncFromGithub(showToastFlag) {
-  const cfg = getGithubConfig();
-  if (!cfg) {
-    updateSyncStatus('offline', '未连接');
-    if (showToastFlag) showToast('请先配置 GitHub', 'error');
-    return;
-  }
   updateSyncStatus('syncing', '同步中...');
   try {
     const url = githubRawUrl() + '?t=' + Date.now();
     const res = await fetch(url);
     if (res.status === 404) {
       updateSyncStatus('online', '已连接（仓库无文章）');
-      if (showToastFlag) showToast('仓库中暂无文章，发布第一篇吧', 'success');
-      renderHome();
+      if (showToastFlag) showToast('仓库中暂无文章', 'success');
       return;
     }
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -1024,7 +975,7 @@ async function syncFromGithub(showToastFlag) {
       saveArticlesLocal();
       renderHome();
       updateSyncStatus('online', '已同步');
-      if (showToastFlag) showToast('已从 GitHub 同步 ' + articles.length + ' 篇文章', 'success');
+      if (showToastFlag) showToast('已同步 ' + articles.length + ' 篇文章', 'success');
     }
   } catch(err) {
     updateSyncStatus('offline', '连接失败');
@@ -1035,15 +986,16 @@ async function syncFromGithub(showToastFlag) {
 }
 
 async function pushToGithub() {
-  const cfg = getGithubConfig();
-  if (!cfg || !cfg.token) {
+  const token = getGithubToken();
+  if (!token) {
+    showToast('请先在设置中填入 GitHub Token', 'error');
     saveArticlesLocal();
-    return true;
+    return false;
   }
   updateSyncStatus('syncing', '发布中...');
   try {
     const apiRes = await fetch(githubApiUrl(), {
-      headers: { 'Authorization': 'token ' + cfg.token, 'Accept': 'application/vnd.github.v3+json' }
+      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' }
     });
     let sha = null;
     if (apiRes.ok) {
@@ -1055,7 +1007,7 @@ async function pushToGithub() {
     const pushRes = await fetch(githubApiUrl(), {
       method: 'PUT',
       headers: {
-        'Authorization': 'token ' + cfg.token,
+        'Authorization': 'token ' + token,
         'Accept': 'application/vnd.github.v3+json',
         'Content-Type': 'application/json',
       },
@@ -1063,7 +1015,7 @@ async function pushToGithub() {
         message: 'update articles.json via xingxw-site',
         content: b64,
         sha: sha,
-        branch: cfg.branch,
+        branch: GITHUB_BRANCH,
       })
     });
     if (!pushRes.ok) {
@@ -1237,8 +1189,8 @@ async function saveArticle() {
     state.articles.unshift(article);
   }
   saveArticlesLocal();
-  const cfg = getGithubConfig();
-  if (cfg && cfg.token) {
+  const token = getGithubToken();
+  if (token) {
     showToast('正在发布到 GitHub...', 'success');
     const ok = await pushToGithub();
     if (ok) {
@@ -1258,8 +1210,8 @@ async function confirmDelete() {
   if (confirm('确定要删除这篇文章吗？此操作不可撤销。')) {
     state.articles = state.articles.filter(a => a.id !== state.editingArticleId);
     saveArticlesLocal();
-    const cfg = getGithubConfig();
-    if (cfg && cfg.token) {
+    const token = getGithubToken();
+    if (token) {
       showToast('正在从 GitHub 删除...', 'success');
       await pushToGithub();
     }
@@ -1499,8 +1451,8 @@ function deleteFromReader(id) {
   if (confirm('确定要删除这篇文章吗？')) {
     state.articles = state.articles.filter(a => a.id !== id);
     saveArticlesLocal();
-    const cfg = getGithubConfig();
-    if (cfg && cfg.token) {
+    const token = getGithubToken();
+    if (token) {
       pushToGithub();
     }
     showToast('文章已删除', 'success');
@@ -1535,13 +1487,9 @@ function switchView(view) {
 
 function updateSettings() {
   document.getElementById('articleCount').textContent = state.articles.length;
-  loadGithubConfigForm();
-  const cfg = getGithubConfig();
-  if (cfg && cfg.token) {
-    document.getElementById('cfgSyncStatus').textContent = '已配置，点击「拉取」同步';
-  } else {
-    document.getElementById('cfgSyncStatus').textContent = '未配置';
-  }
+  const token = getGithubToken();
+  const tokenInput = document.getElementById('cfgGithubToken');
+  if (tokenInput) tokenInput.value = token;
 }
 
 // ===== Editor Tools =====
@@ -1854,13 +1802,8 @@ loadArticlesLocal();
 updateOwnerUI();
 renderHome();
 
-const _cfg = getGithubConfig();
-if (_cfg) {
-  loadGithubConfigForm();
-  syncFromGithub(false);
-} else {
-  updateSyncStatus('offline', '未连接');
-}
+// All visitors sync from GitHub automatically (read is public)
+syncFromGithub(false);
 
 document.getElementById('inputContent').addEventListener('input', function() {
   if (previewMode) updatePreview();
