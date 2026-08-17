@@ -3,44 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>xingxw 的小窝</title>
-<meta name="description" content="xingxw 的个人主页 — 一个安静的小角落。">
+<title>xingxw的天地</title>
+<meta name="description" content="xingxw的天地 — 一个安静的小角落，放着我喜欢的东西，写着想记下来的话。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;700&family=Noto+Serif+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 /* ===== Reset ===== */
-*, *::before, *::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
  
 /* ===== Variables ===== */
 :root {
-  --bg: #faf6ef;
-  --bg-warm: #f5ede0;
+  --bg: #f0ebe3;
+  --glass: rgba(255, 255, 255, 0.22);
+  --glass-strong: rgba(255, 255, 255, 0.35);
+  --glass-border: rgba(255, 255, 255, 0.45);
+  --glass-shadow: 0 8px 32px rgba(31, 26, 22, 0.08);
   --fg: #2d2622;
   --fg-soft: #4a3f38;
   --muted: #9a8c7a;
   --light: #c9bda9;
-  --line: #e0d5c3;
+  --line: rgba(200, 188, 170, 0.3);
   --accent: #8b6914;
   --accent-soft: #c4a44a;
-  --dark-bg: #1a1612;
-  --dark-fg: #f0e8db;
-  --dark-muted: #6b5d4f;
-  --dark-accent: #d4a44a;
-  --max-width: 1100px;
-  --padding: 8vw;
+  --accent-glow: rgba(196, 164, 74, 0.2);
+  --danger: #c04545;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --sidebar-w: 280px;
 }
  
 /* ===== Base ===== */
-html {
-  scroll-behavior: smooth;
-  font-size: 16px;
-}
- 
+html { scroll-behavior: smooth; font-size: 16px; }
 body {
   background: var(--bg);
   color: var(--fg);
@@ -50,572 +44,1575 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-}
- 
-::selection {
-  background: var(--accent-soft);
-  color: var(--bg);
-}
- 
-a {
-  color: inherit;
-  text-decoration: none;
-}
- 
-/* ===== Reveal Animation ===== */
-[data-reveal] {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-[data-reveal].in {
-  opacity: 1;
-  transform: translateY(0);
-}
- 
-/* ===== Nav ===== */
-nav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  padding: 1.5rem var(--padding);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  z-index: 100;
-  background: rgba(250, 246, 239, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.4s ease;
-}
-nav.scrolled {
-  border-bottom-color: var(--line);
-}
- 
-.nav-logo {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 1.1rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  color: var(--fg);
-}
- 
-.nav-links {
-  display: flex;
-  gap: 2.5rem;
-  list-style: none;
-}
-.nav-links a {
-  font-size: 0.8rem;
-  font-weight: 400;
-  letter-spacing: 0.12em;
-  color: var(--fg-soft);
-  transition: color 0.3s ease;
-  position: relative;
-}
-.nav-links a::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 0;
-  height: 1px;
-  background: var(--accent);
-  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.nav-links a:hover {
-  color: var(--accent);
-}
-.nav-links a:hover::after {
-  width: 100%;
-}
- 
-@media (max-width: 640px) {
-  .nav-links { gap: 1.5rem; }
-  .nav-links a { font-size: 0.72rem; }
-}
- 
-/* ===== Hero ===== */
-#hero {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 0 var(--padding);
-  position: relative;
+}
+::selection { background: var(--accent-soft); color: #fff; }
+a { color: var(--accent); text-decoration: none; transition: color .25s; }
+a:hover { color: var(--accent-soft); }
+ 
+/* ===== Background Blobs ===== */
+.bg-decor {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+}
+.blob {
+  position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55;
+  animation: float 20s ease-in-out infinite;
+}
+.blob-1 {
+  width: 500px; height: 500px; top: -100px; left: -80px;
+  background: radial-gradient(circle, #f4c7a0, transparent 70%);
+  animation-delay: 0s;
+}
+.blob-2 {
+  width: 450px; height: 450px; top: 40%; right: -100px;
+  background: radial-gradient(circle, #d1c4e8, transparent 70%);
+  animation-delay: -7s;
+}
+.blob-3 {
+  width: 400px; height: 400px; bottom: -80px; left: 30%;
+  background: radial-gradient(circle, #e8d8a0, transparent 70%);
+  animation-delay: -14s;
+}
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -40px) scale(1.05); }
+  66% { transform: translate(-20px, 30px) scale(.95); }
 }
  
-.hero-content {
-  max-width: var(--max-width);
-}
+/* ===== Layout ===== */
+.layout { display: flex; min-height: 100vh; position: relative; z-index: 1; }
  
-.hero-greeting {
-  font-size: 0.8rem;
-  font-weight: 400;
-  letter-spacing: 0.25em;
-  color: var(--accent);
-  margin-bottom: 2rem;
-  opacity: 0;
-  animation: fadeInUp 1s ease 0.2s forwards;
+/* ===== Sidebar (Frosted Glass) ===== */
+.sidebar {
+  position: fixed; top: 0; left: 0; width: var(--sidebar-w); height: 100vh;
+  background: var(--glass);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-right: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  display: flex; flex-direction: column;
+  padding: 2.5rem 2rem 1.5rem;
+  z-index: 100;
+  overflow-y: auto;
+  transition: transform .4s cubic-bezier(.16, 1, .3, 1);
 }
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
  
-.hero-title {
+.sidebar-header { margin-bottom: 2.5rem; }
+.sidebar-logo {
   font-family: 'Noto Serif SC', serif;
-  font-size: clamp(3rem, 10vw, 7.5rem);
-  font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: -0.01em;
-  color: var(--fg);
-  margin-bottom: 1.5rem;
+  font-size: 1.4rem; font-weight: 700;
+  color: var(--fg); letter-spacing: .02em;
+  display: block; margin-bottom: .3rem;
 }
-.hero-title .light {
-  font-weight: 300;
-  color: var(--muted);
+.sidebar-tagline {
+  font-size: .72rem; color: var(--muted);
+  letter-spacing: .15em; font-weight: 400;
 }
  
-.hero-subtitle {
-  font-size: clamp(0.9rem, 1.5vw, 1.05rem);
-  font-weight: 300;
-  line-height: 1.9;
-  color: var(--fg-soft);
-  max-width: 28em;
-  margin-bottom: 4rem;
-  opacity: 0;
-  animation: fadeInUp 1s ease 0.6s forwards;
+.sidebar-section { margin-bottom: 1.8rem; }
+.sidebar-section-label {
+  font-size: .65rem; font-weight: 500;
+  letter-spacing: .2em; color: var(--light);
+  text-transform: uppercase; margin-bottom: .8rem; padding-left: .5rem;
 }
  
-.hero-name {
-  display: block;
-  opacity: 0;
-  animation: fadeInUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+.nav-link {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .6rem .8rem; border-radius: 8px;
+  font-size: .9rem; color: var(--fg-soft); font-weight: 400;
+  transition: all .25s; cursor: pointer;
+  border: none; background: transparent; width: 100%; text-align: left;
+  font-family: inherit;
+}
+.nav-link:hover { background: var(--glass-strong); color: var(--fg); }
+.nav-link.active { background: var(--glass-strong); color: var(--accent); font-weight: 500; }
+.nav-link .icon { font-size: 1rem; width: 1.3rem; text-align: center; }
+ 
+.owner-link { color: var(--accent); }
+.owner-link:hover { background: var(--accent-glow); }
+ 
+.sidebar-footer {
+  margin-top: auto; padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.sidebar-footer .social-links {
+  display: flex; gap: 1rem; margin-bottom: .8rem;
+}
+.sidebar-footer .social-links a {
+  font-size: .78rem; color: var(--muted);
+  transition: color .25s;
+}
+.sidebar-footer .social-links a:hover { color: var(--accent); }
+.sidebar-footer .copyright {
+  font-size: .68rem; color: var(--light); letter-spacing: .05em;
 }
  
-.hero-nest {
-  display: block;
-  opacity: 0;
-  animation: fadeInUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+/* ===== Mobile Header ===== */
+.mobile-header {
+  display: none; position: fixed; top: 0; left: 0; right: 0;
+  height: 56px; z-index: 90;
+  background: var(--glass);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--glass-border);
+  align-items: center; padding: 0 1rem; gap: 1rem;
+}
+.mobile-header .menu-btn {
+  background: none; border: none; font-size: 1.3rem;
+  color: var(--fg); cursor: pointer; padding: .3rem;
+  display: flex; align-items: center;
+}
+.mobile-header .mobile-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1rem; font-weight: 500;
 }
  
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(30px); }
+.sidebar-overlay {
+  display: none; position: fixed; inset: 0; z-index: 95;
+  background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(2px);
+}
+.sidebar-overlay.show { display: block; }
+ 
+@media (max-width: 900px) {
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: 4px 0 40px rgba(0,0,0,.15);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .mobile-header { display: flex; }
+  .main { padding-top: 56px; }
+}
+ 
+/* ===== Main Content ===== */
+.main {
+  flex: 1; margin-left: var(--sidebar-w);
+  padding: 3rem 5vw 2rem;
+  max-width: 900px;
+  position: relative; z-index: 1;
+}
+@media (max-width: 900px) {
+  .main { margin-left: 0; padding: 4.5rem 5vw 2rem; }
+}
+ 
+/* ===== Views ===== */
+.view { display: none; animation: fadeIn .5s ease; }
+.view.active { display: block; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
  
-.hero-scroll {
-  position: absolute;
-  bottom: 3rem;
-  left: var(--padding);
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.72rem;
-  letter-spacing: 0.15em;
-  color: var(--muted);
-  opacity: 0;
-  animation: fadeInUp 1s ease 1.2s forwards;
+/* ===== Home / Article List ===== */
+.home-header { margin-bottom: 2.5rem; }
+.home-header h2 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 500;
+  color: var(--fg); margin-bottom: .5rem;
 }
-.hero-scroll-line {
-  width: 1px;
-  height: 32px;
-  background: var(--light);
+.home-header p { font-size: .9rem; color: var(--muted); }
+ 
+.article-grid { display: flex; flex-direction: column; gap: 1.2rem; }
+ 
+.article-card {
+  background: var(--glass);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 1.8rem 2rem;
+  cursor: pointer;
+  transition: all .3s cubic-bezier(.16, 1, .3, 1);
+  box-shadow: var(--glass-shadow);
+}
+.article-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-soft);
+  box-shadow: 0 12px 40px rgba(31, 26, 22, 0.12);
+}
+.article-card-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.3rem; font-weight: 500;
+  color: var(--fg); margin-bottom: .5rem;
+  line-height: 1.5;
+}
+.article-card-meta {
+  display: flex; align-items: center; gap: 1rem;
+  font-size: .75rem; color: var(--muted); margin-bottom: .8rem;
+}
+.article-card-meta .date { letter-spacing: .05em; }
+.article-card-tags { display: flex; gap: .4rem; }
+.article-card-tags span {
+  font-size: .68rem; padding: 2px 8px;
+  background: var(--glass-strong); border-radius: 4px;
+  color: var(--fg-soft);
+}
+.article-card-excerpt {
+  font-size: .9rem; color: var(--fg-soft);
+  line-height: 1.7; margin-top: .3rem;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
   overflow: hidden;
-  position: relative;
 }
-.hero-scroll-line::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 40%;
-  background: var(--accent);
-  animation: scrollDown 2s ease-in-out infinite;
-}
-@keyframes scrollDown {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(250%); }
+.article-card .edit-badge {
+  display: inline-block; font-size: .65rem;
+  background: var(--accent-glow); color: var(--accent);
+  padding: 2px 8px; border-radius: 4px; margin-left: .5rem;
 }
  
-/* ===== Section Base ===== */
-section {
-  padding: 10rem var(--padding);
-}
- 
-.section-label {
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  color: var(--accent);
-  margin-bottom: 2.5rem;
-}
- 
-/* ===== About ===== */
-#about {
-  max-width: var(--max-width);
-  margin: 0 auto;
-}
- 
-.about-grid {
-  display: grid;
-  grid-template-columns: 1fr 2.2fr;
-  gap: 4rem;
-  align-items: start;
-}
- 
-@media (max-width: 768px) {
-  .about-grid { grid-template-columns: 1fr; gap: 2rem; }
-}
- 
-.about-side {
-  font-size: 0.78rem;
+/* ===== Empty State ===== */
+.empty-state {
+  text-align: center; padding: 4rem 2rem;
   color: var(--muted);
-  line-height: 2;
-  padding-top: 0.3rem;
 }
-.about-side span {
-  display: block;
+.empty-state .icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: .5; }
+.empty-state p { font-size: .95rem; margin-bottom: 1.5rem; }
+ 
+/* ===== Article Reading View ===== */
+.article-view-header { margin-bottom: 2rem; }
+.article-view-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 500;
+  line-height: 1.4; color: var(--fg); margin-bottom: 1rem;
+}
+.article-view-meta {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  font-size: .8rem; color: var(--muted);
+}
+.article-view-tags { display: flex; gap: .4rem; }
+.article-view-tags span {
+  font-size: .72rem; padding: 3px 10px;
+  background: var(--glass-strong); border-radius: 4px;
+  color: var(--fg-soft); border: 1px solid var(--glass-border);
+}
+.back-btn {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-size: .82rem; color: var(--muted);
+  margin-bottom: 1.5rem; cursor: pointer;
+  background: none; border: none; font-family: inherit;
+  transition: color .25s;
+}
+.back-btn:hover { color: var(--accent); }
+ 
+.article-body {
+  font-size: 1rem; line-height: 2; color: var(--fg-soft);
+}
+.article-body h1, .article-body h2, .article-body h3 {
+  font-family: 'Noto Serif SC', serif;
+  color: var(--fg); margin: 2em 0 .8em; line-height: 1.4;
+}
+.article-body h1 { font-size: 1.6rem; font-weight: 700; }
+.article-body h2 { font-size: 1.35rem; font-weight: 500; }
+.article-body h3 { font-size: 1.15rem; font-weight: 500; }
+.article-body p { margin-bottom: 1.2em; }
+.article-body strong { color: var(--fg); font-weight: 500; }
+.article-body em { font-style: italic; color: var(--accent); }
+.article-body a { border-bottom: 1px solid var(--accent-soft); }
+.article-body blockquote {
+  border-left: 3px solid var(--accent-soft);
+  padding: .5rem 1.2rem; margin: 1.5em 0;
+  color: var(--muted); font-style: italic;
+  background: var(--glass);
+  border-radius: 0 8px 8px 0;
+}
+.article-body code {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: .85em; background: var(--glass-strong);
+  padding: 2px 6px; border-radius: 4px;
+  color: var(--accent);
+}
+.article-body pre {
+  background: rgba(45, 38, 34, 0.88);
+  border-radius: 10px; padding: 1.2rem 1.5rem;
+  overflow-x: auto; margin: 1.5em 0;
+}
+.article-body pre code {
+  background: none; color: #e8dfd3;
+  padding: 0; font-size: .85rem; line-height: 1.6;
+}
+.article-body ul, .article-body ol { padding-left: 1.5em; margin-bottom: 1.2em; }
+.article-body li { margin-bottom: .4em; }
+.article-body hr { border: none; border-top: 1px solid var(--line); margin: 2em 0; }
+.article-body img { max-width: 100%; border-radius: 10px; margin: 1em 0; }
+ 
+.article-footer {
+  margin-top: 3rem; padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+}
+.article-footer .owner-actions { display: flex; gap: .5rem; }
+ 
+/* ===== About View ===== */
+.about-content {
+  background: var(--glass);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 2.5rem 3rem;
+  box-shadow: var(--glass-shadow);
+}
+.about-content h2 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.8rem; font-weight: 500;
+  margin-bottom: 1.5rem; color: var(--fg);
+}
+.about-content p {
+  font-size: 1rem; color: var(--fg-soft);
+  margin-bottom: 1rem; line-height: 2;
+}
+.about-content em {
+  font-style: normal; color: var(--accent); font-weight: 500;
+}
+.about-side {
+  margin-top: 2rem; padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+  font-size: .85rem; color: var(--muted); line-height: 2;
 }
 .about-side .label {
-  color: var(--light);
-  font-size: 0.68rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  margin-top: 1.2rem;
+  color: var(--light); font-size: .68rem;
+  letter-spacing: .15em; text-transform: uppercase;
 }
-.about-side .value {
-  color: var(--fg-soft);
-  font-size: 0.82rem;
-  margin-top: 0.15rem;
-}
+.about-side .value { color: var(--fg-soft); }
  
-.about-text {
+/* ===== Editor View ===== */
+.editor-header {
+  margin-bottom: 1.5rem;
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+}
+.editor-header h2 {
   font-family: 'Noto Serif SC', serif;
-  font-size: clamp(1.3rem, 2.8vw, 1.85rem);
-  font-weight: 400;
-  line-height: 1.75;
-  color: var(--fg);
-  letter-spacing: 0.01em;
+  font-size: 1.6rem; font-weight: 500;
 }
-.about-text p + p {
-  margin-top: 1.8rem;
+.editor-form {
+  background: var(--glass);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  box-shadow: var(--glass-shadow);
 }
-.about-text em {
-  font-style: normal;
-  color: var(--accent);
-  font-weight: 500;
+.form-group { margin-bottom: 1.2rem; }
+.form-group label {
+  display: block; font-size: .78rem; font-weight: 500;
+  letter-spacing: .1em; color: var(--accent);
+  margin-bottom: .5rem; text-transform: uppercase;
+}
+.form-input, .form-textarea {
+  width: 100%; padding: .8rem 1rem;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  font-family: inherit; font-size: .95rem; color: var(--fg);
+  transition: all .25s; outline: none;
+}
+.form-input:focus, .form-textarea:focus {
+  border-color: var(--accent-soft);
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.form-textarea {
+  min-height: 350px; resize: vertical;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Noto Sans SC', monospace;
+  font-size: .88rem; line-height: 1.8;
+}
+.form-hint {
+  font-size: .75rem; color: var(--muted);
+  margin-top: .4rem;
+}
+.form-hint code {
+  font-size: .72rem; background: var(--glass-strong);
+  padding: 1px 5px; border-radius: 3px; color: var(--accent);
 }
  
-/* ===== Interlude ===== */
-#interlude {
-  background: var(--dark-bg);
-  color: var(--dark-fg);
+.editor-toolbar {
+  display: flex; gap: .5rem; flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.toolbar-btn {
+  padding: .3rem .7rem; font-size: .78rem;
+  background: var(--glass-strong); border: 1px solid var(--glass-border);
+  border-radius: 6px; cursor: pointer; color: var(--fg-soft);
+  font-family: inherit; transition: all .2s;
+}
+.toolbar-btn:hover { background: var(--accent-glow); color: var(--accent); }
+ 
+.editor-actions {
+  display: flex; gap: .8rem; margin-top: 1.5rem;
+  padding-top: 1.5rem; border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+ 
+/* ===== Buttons ===== */
+.btn {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .6rem 1.4rem; border-radius: 10px;
+  font-size: .88rem; font-weight: 500;
+  border: 1px solid transparent; cursor: pointer;
+  font-family: inherit; transition: all .25s;
+}
+.btn-primary {
+  background: var(--accent); color: #fff;
+  border-color: var(--accent);
+}
+.btn-primary:hover {
+  background: #745314; box-shadow: 0 4px 16px var(--accent-glow);
+}
+.btn-ghost {
+  background: transparent; color: var(--fg-soft);
+  border-color: var(--glass-border);
+}
+.btn-ghost:hover { border-color: var(--accent-soft); color: var(--accent); }
+.btn-danger {
+  background: transparent; color: var(--danger);
+  border-color: rgba(192, 69, 69, 0.3);
+}
+.btn-danger:hover { background: rgba(192, 69, 69, 0.1); border-color: var(--danger); }
+.btn-sm { padding: .4rem .9rem; font-size: .8rem; }
+ 
+/* ===== Modal (Password) ===== */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(45, 38, 34, 0.3);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: none; align-items: center; justify-content: center;
+  animation: fadeIn .3s ease;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--glass);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 2.5rem;
+  width: 90%; max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.15);
   text-align: center;
-  padding: 14rem var(--padding);
-  position: relative;
-  overflow: hidden;
 }
- 
-#interlude::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(212, 164, 74, 0.08) 0%, transparent 60%);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
- 
-.interlude-text {
+.modal h3 {
   font-family: 'Noto Serif SC', serif;
-  font-size: clamp(1.8rem, 5vw, 3.2rem);
-  font-weight: 300;
-  line-height: 1.6;
-  color: var(--dark-fg);
-  max-width: 18em;
-  margin: 0 auto;
-  position: relative;
-  z-index: 1;
+  font-size: 1.3rem; font-weight: 500;
+  margin-bottom: .5rem; color: var(--fg);
 }
-.interlude-author {
-  margin-top: 2.5rem;
-  font-size: 0.78rem;
-  letter-spacing: 0.2em;
-  color: var(--dark-muted);
-  position: relative;
-  z-index: 1;
-}
-.interlude-author span {
-  color: var(--dark-accent);
-}
- 
-/* ===== Interests ===== */
-#interests {
-  max-width: var(--max-width);
-  margin: 0 auto;
-}
- 
-.interest-list {
-  list-style: none;
-  margin-top: 1rem;
-}
- 
-.interest-item {
-  display: grid;
-  grid-template-columns: auto 1fr 2fr;
-  gap: 2rem;
-  align-items: baseline;
-  padding: 2.2rem 0;
-  border-bottom: 1px solid var(--line);
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: default;
-}
-.interest-item:first-child {
-  border-top: 1px solid var(--line);
-}
-.interest-item:hover {
-  transform: translateX(12px);
-}
- 
-@media (max-width: 640px) {
-  .interest-item {
-    grid-template-columns: auto 1fr;
-    gap: 1rem;
-  }
-  .interest-item .interest-desc {
-    grid-column: 1 / -1;
-    padding-left: 2.5rem;
-  }
-}
- 
-.interest-num {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 0.85rem;
-  font-weight: 400;
-  color: var(--accent);
-  letter-spacing: 0.05em;
-}
- 
-.interest-name {
-  font-family: 'Noto Serif SC', serif;
-  font-size: clamp(1.3rem, 2.5vw, 1.7rem);
-  font-weight: 500;
-  color: var(--fg);
-}
- 
-.interest-desc {
-  font-size: 0.92rem;
-  font-weight: 300;
-  color: var(--fg-soft);
-  line-height: 1.8;
-}
- 
-/* ===== Contact ===== */
-#contact {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  text-align: center;
-  padding: 12rem var(--padding);
-}
- 
-.contact-label {
-  display: block;
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  color: var(--accent);
-  margin-bottom: 3rem;
-}
- 
-.contact-email {
-  font-family: 'Noto Serif SC', serif;
-  font-size: clamp(1.3rem, 3.5vw, 2.2rem);
-  font-weight: 400;
+.modal p {
+  font-size: .82rem; color: var(--muted);
   margin-bottom: 1.5rem;
 }
-.contact-email a {
-  color: var(--fg);
-  border-bottom: 2px solid transparent;
-  transition: border-color 0.4s ease, color 0.4s ease;
-  padding-bottom: 4px;
+.modal input {
+  width: 100%; padding: .7rem 1rem;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  font-family: inherit; font-size: .95rem;
+  color: var(--fg); text-align: center;
+  outline: none; margin-bottom: 1rem;
+  transition: all .25s;
 }
-.contact-email a:hover {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+.modal input:focus {
+  border-color: var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
+.modal-error {
+  font-size: .78rem; color: var(--danger);
+  margin-bottom: 1rem; min-height: 1.2em;
+}
+.modal-actions { display: flex; gap: .8rem; justify-content: center; }
  
-.contact-note {
-  font-size: 0.82rem;
-  color: var(--muted);
-  font-weight: 300;
-  letter-spacing: 0.05em;
-}
- 
-/* ===== Footer ===== */
-footer {
-  padding: 2rem var(--padding);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* ===== Settings Panel ===== */
+.settings-section {
+  margin-top: 2rem; padding-top: 1.5rem;
   border-top: 1px solid var(--line);
-  font-size: 0.75rem;
-  color: var(--muted);
-  letter-spacing: 0.05em;
 }
-footer a {
-  color: var(--accent);
-  transition: color 0.3s ease;
+.settings-section h3 {
+  font-size: .78rem; font-weight: 500;
+  letter-spacing: .15em; color: var(--accent);
+  text-transform: uppercase; margin-bottom: 1rem;
 }
-footer a:hover {
-  text-decoration: underline;
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .7rem 0; font-size: .88rem; color: var(--fg-soft);
+  gap: 1rem;
+}
+.settings-row .desc { font-size: .75rem; color: var(--muted); }
+ 
+/* ===== Toast ===== */
+.toast {
+  position: fixed; bottom: 2rem; right: 2rem;
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: .8rem 1.5rem;
+  font-size: .88rem; color: var(--fg);
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+  z-index: 300;
+  transform: translateY(100px); opacity: 0;
+  transition: all .4s cubic-bezier(.16, 1, .3, 1);
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { border-left: 3px solid #4caf50; }
+.toast.error { border-left: 3px solid var(--danger); }
+ 
+/* ===== Preview Toggle ===== */
+.editor-preview {
+  margin-top: 1.5rem; padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.preview-toggle {
+  display: flex; gap: .5rem; margin-bottom: 1rem;
+}
+.preview-toggle button {
+  padding: .3rem 1rem; font-size: .78rem;
+  background: transparent; border: 1px solid var(--glass-border);
+  border-radius: 6px; cursor: pointer; color: var(--muted);
+  font-family: inherit; transition: all .2s;
+}
+.preview-toggle button.active {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.preview-content {
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px; padding: 1.5rem;
+  min-height: 200px;
+  font-size: .95rem; line-height: 2; color: var(--fg-soft);
+}
+.preview-content:empty::before {
+  content: '预览区域 — 输入内容后这里会显示渲染效果';
+  color: var(--light); font-size: .85rem;
 }
  
-@media (max-width: 480px) {
-  footer {
-    flex-direction: column;
-    gap: 0.8rem;
-  }
+/* ===== Sync Status ===== */
+.sync-status {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-size: .72rem; padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--glass-strong);
+}
+.sync-status .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--muted);
+}
+.sync-status.online .dot { background: #4caf50; }
+.sync-status.offline .dot { background: var(--danger); }
+.sync-status.syncing .dot { background: var(--accent-soft); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+ 
+/* ===== Form Select ===== */
+.form-select {
+  width: 100%; padding: .6rem 1rem;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  font-family: inherit; font-size: .88rem; color: var(--fg);
+  outline: none; cursor: pointer;
+}
+ 
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  .main { padding: 4.5rem 4vw 2rem; }
+  .article-card { padding: 1.3rem 1.4rem; }
+  .about-content { padding: 1.8rem 1.5rem; }
+  .editor-form { padding: 1.3rem; }
+  .modal { padding: 2rem 1.5rem; }
+  .toast { bottom: 1rem; right: 1rem; left: 1rem; }
 }
  
 /* ===== Reduced Motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
   }
-  [data-reveal] {
-    opacity: 1;
-    transform: none;
-  }
-}
- 
-/* ===== Focus ===== */
-a:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-  border-radius: 2px;
 }
 </style>
 </head>
 <body>
  
-<!-- ===== Nav ===== -->
-<nav id="nav">
-  <span class="nav-logo">xingxw</span>
-  <ul class="nav-links">
-    <li><a href="#about">关于</a></li>
-    <li><a href="#interests">兴趣</a></li>
-    <li><a href="#contact">联系</a></li>
-  </ul>
-</nav>
+<!-- ===== Background ===== -->
+<div class="bg-decor">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
  
-<!-- ===== Hero ===== -->
-<section id="hero">
-  <div class="hero-content">
-    <p class="hero-greeting">你好，欢迎来到</p>
-    <h1 class="hero-title">
-      <span class="hero-name">xingxw</span>
-      <span class="hero-nest light">的小窝</span>
-    </h1>
-    <p class="hero-subtitle">
-      一个安静的角落。放着我喜欢的东西，写着想记下来的话。不赶时间，也不急着被谁看见。
-    </p>
-  </div>
-  <div class="hero-scroll">
-    <span>向下走走</span>
-    <div class="hero-scroll-line"></div>
-  </div>
-</section>
+<!-- ===== Mobile Header ===== -->
+<header class="mobile-header">
+  <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+  <span class="mobile-title">xingxw的天地</span>
+</header>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
  
-<!-- ===== About ===== -->
-<section id="about" data-reveal>
-  <div class="section-label">关于</div>
-  <div class="about-grid">
-    <div class="about-side">
-      <span class="label">名字</span>
-      <span class="value">xingxw</span>
-      <span class="label">所在地</span>
-      <span class="value">地球某处</span>
-      <span class="label">状态</span>
-      <span class="value">慢慢生活中</span>
+<div class="layout">
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-logo">xingxw的天地</span>
+      <span class="sidebar-tagline">安静的一角</span>
     </div>
-    <div class="about-text">
-      <p>这里是属于我的一<em>方天地</em>。</p>
-      <p>没有特别的故事要讲，只是想有一个地方可以安安静静地放些东西——也许是一段文字，也许是一张照片，也许只是某个下午发呆时想到的一句话。</p>
+ 
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">导航</div>
+      <button class="nav-link active" data-view="home" onclick="switchView('home')">
+        <span class="icon"> home </span>首页
+      </button>
+      <button class="nav-link" data-view="about" onclick="switchView('about')">
+        <span class="icon"> person </span>关于
+      </button>
+    </div>
+ 
+    <div class="sidebar-section" id="ownerSection" style="display:none;">
+      <div class="sidebar-section-label">站长</div>
+      <button class="nav-link owner-link" onclick="openEditor()">
+        <span class="icon"> edit </span>写文章
+      </button>
+      <button class="nav-link owner-link" onclick="switchView('settings')">
+        <span class="icon"> settings </span>设置
+      </button>
+      <button class="nav-link owner-link" onclick="logout()">
+        <span class="icon"> exit </span>退出登录
+      </button>
+    </div>
+ 
+    <div class="sidebar-section" id="loginSection">
+      <div class="sidebar-section-label">站长入口</div>
+      <button class="nav-link" onclick="showPasswordModal()">
+        <span class="icon"> lock </span>登录
+      </button>
+    </div>
+ 
+    <div class="sidebar-footer">
+      <div class="social-links">
+        <a href="https://github.com/jianjinx" target="_blank">GitHub</a>
+        <a href="mailto:xing.x.wang@outlook.com">Email</a>
+      </div>
+      <div class="copyright">© 2026 xingxw</div>
+    </div>
+  </aside>
+ 
+  <!-- ===== Main ===== -->
+  <main class="main">
+    <!-- Home View -->
+    <div class="view active" id="view-home">
+      <div class="home-header">
+        <h2>文章</h2>
+        <p>慢慢走，慢慢写。<span class="sync-status offline" id="syncStatus"><span class="dot"></span><span id="syncText">未连接</span></span></p>
+      </div>
+      <div class="article-grid" id="articleGrid"></div>
+    </div>
+ 
+    <!-- Article Reading View -->
+    <div class="view" id="view-article">
+      <button class="back-btn" onclick="switchView('home')">← 返回首页</button>
+      <div id="articleContent"></div>
+    </div>
+ 
+    <!-- About View -->
+    <div class="view" id="view-about">
+      <div class="about-content">
+        <h2>关于</h2>
+        <p>这里是属于我的一<em>方天地</em>。</p>
+        <p>没有特别的故事要讲，只是想有一个地方可以安安静静地放些东西——也许是一段文字，也许是一张照片，也许只是某个下午发呆时想到的一句话。</p>
+        <p>这个网站用了磨砂玻璃风格，左侧是固定边栏，支持发布和阅读文章。文章用 Markdown 写成，通过 GitHub 同步，所有人可见。</p>
+        <p>不赶时间，也不急着被谁看见。</p>
+        <div class="about-side">
+          <div class="label">名字</div>
+          <div class="value">xingxw</div>
+          <div class="label">所在地</div>
+          <div class="value">地球某处</div>
+          <div class="label">状态</div>
+          <div class="value">慢慢生活中</div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- Editor View -->
+    <div class="view" id="view-editor">
+      <div class="editor-header">
+        <h2 id="editorTitle">写文章</h2>
+        <button class="btn btn-ghost btn-sm" onclick="switchView('home')">取消</button>
+      </div>
+      <div class="editor-form">
+        <div class="form-group">
+          <label>标题</label>
+          <input type="text" class="form-input" id="inputTitle" placeholder="给这篇文章起个名字...">
+        </div>
+        <div class="form-group">
+          <label>标签</label>
+          <input type="text" class="form-input" id="inputTags" placeholder="用逗号分隔，如：随笔, 技术, 生活">
+        </div>
+        <div class="form-group">
+          <label>正文</label>
+          <div class="editor-toolbar">
+            <button class="toolbar-btn" onclick="insertMd('## ', '')">H2 标题</button>
+            <button class="toolbar-btn" onclick="insertMd('**', '**')">粗体</button>
+            <button class="toolbar-btn" onclick="insertMd('*', '*')">斜体</button>
+            <button class="toolbar-btn" onclick="insertMd('> ', '')">引用</button>
+            <button class="toolbar-btn" onclick="insertMd('- ', '')">列表</button>
+            <button class="toolbar-btn" onclick="insertMd('`', '`')">行内代码</button>
+            <button class="toolbar-btn" onclick="insertMd('\n```\n', '\n```\n')">代码块</button>
+            <button class="toolbar-btn" onclick="insertMd('\n---\n', '')">分隔线</button>
+          </div>
+          <textarea class="form-textarea" id="inputContent" placeholder="在这里写下你想说的...&#10;&#10;支持 Markdown 语法：&#10;# 大标题&#10;## 中标题&#10;**粗体** *斜体*&#10;> 引用&#10;- 列表&#10;`行内代码`&#10;```代码块```&#10;[链接](https://...)"></textarea>
+          <div class="form-hint">
+            提示：支持 Markdown 语法。<code>#</code> 标题、<code>**粗体**</code>、<code>*斜体*</code>、<code>&gt; 引用</code>、<code>- 列表</code>、<code>```代码```</code>、<code>[链接](url)</code>
+          </div>
+        </div>
+ 
+        <div class="editor-preview">
+          <div class="preview-toggle">
+            <button class="active" onclick="togglePreview(false)">编辑</button>
+            <button onclick="togglePreview(true)">预览</button>
+          </div>
+          <div class="preview-content" id="previewContent"></div>
+        </div>
+ 
+        <div class="editor-actions">
+          <button class="btn btn-primary" onclick="saveArticle()">发布文章</button>
+          <button class="btn btn-ghost" onclick="switchView('home')">取消</button>
+          <button class="btn btn-danger" id="deleteBtn" style="display:none; margin-left:auto;" onclick="confirmDelete()">删除</button>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- Settings View -->
+    <div class="view" id="view-settings">
+      <div class="editor-header">
+        <h2>设置</h2>
+        <button class="btn btn-ghost btn-sm" onclick="switchView('home')">返回</button>
+      </div>
+      <div class="editor-form">
+        <!-- GitHub 同步 -->
+        <div class="settings-section" style="margin-top:0; padding-top:0; border-top:none;">
+          <h3>GitHub 同步</h3>
+          <p style="font-size:.82rem; color:var(--muted); margin-bottom:1rem; line-height:1.8;">
+            配置 GitHub 仓库后，文章将同步到云端，<strong style="color:var(--fg-soft);">所有访客都能看到</strong>。<br>
+            不配置则仅使用本地存储（只有当前浏览器可见）。
+          </p>
+          <div class="form-group">
+            <label>GitHub 用户名</label>
+            <input type="text" class="form-input" id="cfgGithubUser" placeholder="如 jianjinx">
+          </div>
+          <div class="form-group">
+            <label>仓库名</label>
+            <input type="text" class="form-input" id="cfgGithubRepo" placeholder="如 xingxw-site">
+          </div>
+          <div class="form-group">
+            <label>分支名</label>
+            <input type="text" class="form-input" id="cfgGithubBranch" placeholder="main" value="main">
+          </div>
+          <div class="form-group">
+            <label>Personal Access Token</label>
+            <input type="password" class="form-input" id="cfgGithubToken" placeholder="ghp_... (只需 repo 权限)">
+            <div class="form-hint">
+              在 GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token 生成，勾选 <code>repo</code> 权限。
+            </div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div>同步状态</div>
+              <div class="desc" id="cfgSyncStatus">未连接</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="saveGithubConfig()">保存配置</button>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div>手动同步</div>
+              <div class="desc">从 GitHub 拉取最新文章</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="syncFromGithub(true)">拉取</button>
+          </div>
+        </div>
+ 
+        <div class="settings-section">
+          <h3>文章管理</h3>
+          <div class="settings-row">
+            <div>
+              <div>导出文章</div>
+              <div class="desc">将所有文章保存为 JSON 文件（本地备份）</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="exportArticles()">导出</button>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div>导入文章</div>
+              <div class="desc">从 JSON 文件恢复文章（覆盖现有，需手动同步到 GitHub）</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('importFile').click()">导入</button>
+            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importArticles(event)">
+          </div>
+          <div class="settings-row">
+            <div>
+              <div>文章数量</div>
+              <div class="desc">当前共 <span id="articleCount">0</span> 篇</div>
+            </div>
+          </div>
+        </div>
+ 
+        <div class="settings-section">
+          <h3>安全</h3>
+          <div class="settings-row">
+            <div>
+              <div>修改密码</div>
+              <div class="desc">站长登录密码（本地验证）</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="showChangePwdModal()">修改</button>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div>默认密码</div>
+              <div class="desc">首次使用默认密码为 xingxw，请及时修改</div>
+            </div>
+          </div>
+        </div>
+ 
+        <div class="settings-section">
+          <h3>说明</h3>
+          <div style="font-size:.85rem; color:var(--muted); line-height:1.9;">
+            <p>• 配置 GitHub 同步后，文章存储在 GitHub 仓库的 <code style="background:var(--glass-strong);padding:1px 5px;border-radius:3px;color:var(--accent);">articles.json</code> 文件中</p>
+            <p>• 所有访客通过 GitHub 读取文章（公开仓库无需 token）</p>
+            <p>• 只有站长登录后才能发布/编辑/删除文章</p>
+            <p>• Token 仅存储在浏览器本地，不上传到任何服务器</p>
+            <p>• 未配置 GitHub 时，退回本地存储模式（仅当前浏览器可见）</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+ 
+<!-- ===== Password Modal ===== -->
+<div class="modal-overlay" id="pwdModal">
+  <div class="modal">
+    <h3>站长验证</h3>
+    <p>输入密码以进入编辑模式</p>
+    <input type="password" id="pwdInput" placeholder="密码" onkeydown="if(event.key==='Enter')verifyPassword()">
+    <div class="modal-error" id="pwdError"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="hidePasswordModal()">取消</button>
+      <button class="btn btn-primary" onclick="verifyPassword()">确认</button>
     </div>
   </div>
-</section>
+</div>
  
-<!-- ===== Interlude ===== -->
-<section id="interlude" data-reveal>
-  <p class="interlude-text">慢慢走，欣赏啊。</p>
-  <p class="interlude-author">—— 朱光潜 <span>《谈美》</span></p>
-</section>
+<!-- ===== Change Password Modal ===== -->
+<div class="modal-overlay" id="changePwdModal">
+  <div class="modal">
+    <h3>修改密码</h3>
+    <p>设置新的站长密码</p>
+    <input type="password" id="oldPwd" placeholder="当前密码" style="margin-bottom:.5rem;">
+    <input type="password" id="newPwd" placeholder="新密码" style="margin-bottom:.5rem;">
+    <input type="password" id="confirmPwd" placeholder="确认新密码">
+    <div class="modal-error" id="changePwdError"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="hideChangePwdModal()">取消</button>
+      <button class="btn btn-primary" onclick="changePassword()">确认</button>
+    </div>
+  </div>
+</div>
  
-<!-- ===== Interests ===== -->
-<section id="interests" data-reveal>
-  <div class="section-label">兴趣</div>
-  <ul class="interest-list">
-    <li class="interest-item">
-      <span class="interest-num">01</span>
-      <span class="interest-name">阅读</span>
-      <span class="interest-desc">什么都读一点。最近偏爱散文和旧诗。</span>
-    </li>
-    <li class="interest-item">
-      <span class="interest-num">02</span>
-      <span class="interest-name">写东西</span>
-      <span class="interest-desc">随手记下想到的话，不一定是文章。</span>
-    </li>
-    <li class="interest-item">
-      <span class="interest-num">03</span>
-      <span class="interest-name">摄影</span>
-      <span class="interest-desc">偶尔拍照，记录看到的光。</span>
-    </li>
-    <li class="interest-item">
-      <span class="interest-num">04</span>
-      <span class="interest-name">音乐</span>
-      <span class="interest-desc">工作时听后摇，放松时听爵士。</span>
-    </li>
-  </ul>
-</section>
- 
-<!-- ===== Contact ===== -->
-<section id="contact" data-reveal>
-  <span class="contact-label">联系</span>
-  <p class="contact-email">
-    <a href="mailto:xing.x.wang@outlook.com">xing.x.wang@outlook.com</a>
-  </p>
-  <p class="contact-note">想聊聊的话，随时写信给我。</p>
-</section>
- 
-<!-- ===== Footer ===== -->
-<footer>
-  <span>© 2026 xingxw · 小窝</span>
-  <a href="#hero">回到顶部</a>
-</footer>
+<!-- ===== Toast ===== -->
+<div class="toast" id="toast"></div>
  
 <script>
-// Nav scroll shadow
-const nav = document.getElementById('nav');
-window.addEventListener('scroll', () => {
-  nav.classList.toggle('scrolled', window.scrollY > 20);
-}, { passive: true });
+// ===== State =====
+const state = {
+  articles: [],
+  currentView: 'home',
+  currentArticleId: null,
+  ownerMode: false,
+  editingArticleId: null,
+  showPreview: false,
+};
  
-// Reveal on scroll
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('in');
+const STORAGE_KEYS = {
+  articles: 'xingxw_articles',
+  pwdHash: 'xingxw_pwd_hash',
+  github: 'xingxw_github_config',
+};
+ 
+// ===== GitHub Config =====
+function getGithubConfig() {
+  const data = localStorage.getItem(STORAGE_KEYS.github);
+  if (!data) return null;
+  try { return JSON.parse(data); } catch(e) { return null; }
+}
+ 
+function saveGithubConfig() {
+  const cfg = {
+    user: document.getElementById('cfgGithubUser').value.trim(),
+    repo: document.getElementById('cfgGithubRepo').value.trim(),
+    branch: document.getElementById('cfgGithubBranch').value.trim() || 'main',
+    token: document.getElementById('cfgGithubToken').value.trim(),
+  };
+  if (!cfg.user || !cfg.repo) {
+    showToast('请填写 GitHub 用户名和仓库名', 'error');
+    return;
+  }
+  localStorage.setItem(STORAGE_KEYS.github, JSON.stringify(cfg));
+  showToast('配置已保存，正在连接...', 'success');
+  syncFromGithub(true);
+}
+ 
+function loadGithubConfigForm() {
+  const cfg = getGithubConfig();
+  if (cfg) {
+    document.getElementById('cfgGithubUser').value = cfg.user || '';
+    document.getElementById('cfgGithubRepo').value = cfg.repo || '';
+    document.getElementById('cfgGithubBranch').value = cfg.branch || 'main';
+    document.getElementById('cfgGithubToken').value = cfg.token || '';
+  }
+}
+ 
+// ===== GitHub API =====
+function githubRawUrl() {
+  const cfg = getGithubConfig();
+  if (!cfg) return null;
+  return `https://raw.githubusercontent.com/${cfg.user}/${cfg.repo}/${cfg.branch}/articles.json`;
+}
+ 
+function githubApiUrl() {
+  const cfg = getGithubConfig();
+  if (!cfg) return null;
+  return `https://api.github.com/repos/${cfg.user}/${cfg.repo}/contents/articles.json`;
+}
+ 
+async function syncFromGithub(showToastFlag) {
+  const cfg = getGithubConfig();
+  if (!cfg) {
+    updateSyncStatus('offline', '未连接');
+    if (showToastFlag) showToast('请先配置 GitHub', 'error');
+    return;
+  }
+  updateSyncStatus('syncing', '同步中...');
+  try {
+    // Add cache-buster to avoid CDN caching
+    const url = githubRawUrl() + '?t=' + Date.now();
+    const res = await fetch(url);
+    if (res.status === 404) {
+      updateSyncStatus('online', '已连接（仓库无文章）');
+      if (showToastFlag) showToast('仓库中暂无文章，发布第一篇吧', 'success');
+      // Keep local articles, don't clear
+      renderHome();
+      return;
     }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const articles = JSON.parse(text);
+    if (Array.isArray(articles)) {
+      state.articles = articles;
+      saveArticlesLocal();
+      renderHome();
+      updateSyncStatus('online', '已同步');
+      if (showToastFlag) showToast('已从 GitHub 同步 ' + articles.length + ' 篇文章', 'success');
+    }
+  } catch(err) {
+    updateSyncStatus('offline', '连接失败');
+    if (showToastFlag) showToast('同步失败：' + err.message, 'error');
+    // Fallback to local
+    loadArticlesLocal();
+    renderHome();
+  }
+}
+ 
+async function pushToGithub() {
+  const cfg = getGithubConfig();
+  if (!cfg || !cfg.token) {
+    // No GitHub config, just save locally
+    saveArticlesLocal();
+    return true;
+  }
+  updateSyncStatus('syncing', '发布中...');
+  try {
+    // First, get the current file's SHA (needed for update)
+    const apiRes = await fetch(githubApiUrl(), {
+      headers: { 'Authorization': 'token ' + cfg.token, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    let sha = null;
+    if (apiRes.ok) {
+      const apiData = await apiRes.json();
+      sha = apiData.sha;
+    }
+ 
+    // Encode content as base64
+    const content = JSON.stringify(state.articles, null, 2);
+    const b64 = btoa(unescape(encodeURIComponent(content)));
+ 
+    // Push to GitHub
+    const pushRes = await fetch(githubApiUrl(), {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'token ' + cfg.token,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: 'update articles.json via xingxw-site',
+        content: b64,
+        sha: sha,
+        branch: cfg.branch,
+      })
+    });
+ 
+    if (!pushRes.ok) {
+      const errData = await pushRes.json().catch(() => ({}));
+      throw new Error(errData.message || ('HTTP ' + pushRes.status));
+    }
+ 
+    updateSyncStatus('online', '已同步');
+    return true;
+  } catch(err) {
+    updateSyncStatus('offline', '发布失败');
+    showToast('发布到 GitHub 失败：' + err.message + '（已保存到本地）', 'error');
+    saveArticlesLocal();
+    return false;
+  }
+}
+ 
+function updateSyncStatus(status, text) {
+  const el = document.getElementById('syncStatus');
+  const txt = document.getElementById('syncText');
+  const cfgEl = document.getElementById('cfgSyncStatus');
+  if (el) { el.className = 'sync-status ' + status; }
+  if (txt) { txt.textContent = text; }
+  if (cfgEl) { cfgEl.textContent = text; }
+}
+ 
+// ===== Simple Hash (djb2) =====
+function hash(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h) + str.charCodeAt(i);
+    h = h & h;
+  }
+  return (h >>> 0).toString(36);
+}
+ 
+// ===== Password =====
+function getStoredPwdHash() {
+  let h = localStorage.getItem(STORAGE_KEYS.pwdHash);
+  if (!h) {
+    h = hash('xingxw');
+    localStorage.setItem(STORAGE_KEYS.pwdHash, h);
+  }
+  return h;
+}
+ 
+function verifyPassword() {
+  const input = document.getElementById('pwdInput').value;
+  const err = document.getElementById('pwdError');
+  if (!input) { err.textContent = '请输入密码'; return; }
+  if (hash(input) === getStoredPwdHash()) {
+    state.ownerMode = true;
+    hidePasswordModal();
+    updateOwnerUI();
+    showToast('登录成功，欢迎回来', 'success');
+    switchView('home');
+  } else {
+    err.textContent = '密码错误';
+    document.getElementById('pwdInput').value = '';
+  }
+}
+ 
+function showPasswordModal() {
+  document.getElementById('pwdModal').classList.add('show');
+  document.getElementById('pwdInput').value = '';
+  document.getElementById('pwdError').textContent = '';
+  setTimeout(() => document.getElementById('pwdInput').focus(), 100);
+}
+ 
+function hidePasswordModal() {
+  document.getElementById('pwdModal').classList.remove('show');
+}
+ 
+function showChangePwdModal() {
+  document.getElementById('changePwdModal').classList.add('show');
+  document.getElementById('oldPwd').value = '';
+  document.getElementById('newPwd').value = '';
+  document.getElementById('confirmPwd').value = '';
+  document.getElementById('changePwdError').textContent = '';
+}
+ 
+function hideChangePwdModal() {
+  document.getElementById('changePwdModal').classList.remove('show');
+}
+ 
+function changePassword() {
+  const oldP = document.getElementById('oldPwd').value;
+  const newP = document.getElementById('newPwd').value;
+  const confirmP = document.getElementById('confirmPwd').value;
+  const err = document.getElementById('changePwdError');
+ 
+  if (!oldP || !newP || !confirmP) { err.textContent = '请填写所有字段'; return; }
+  if (hash(oldP) !== getStoredPwdHash()) { err.textContent = '当前密码错误'; return; }
+  if (newP.length < 3) { err.textContent = '新密码至少 3 个字符'; return; }
+  if (newP !== confirmP) { err.textContent = '两次输入的新密码不一致'; return; }
+ 
+  localStorage.setItem(STORAGE_KEYS.pwdHash, hash(newP));
+  hideChangePwdModal();
+  showToast('密码修改成功', 'success');
+}
+ 
+function logout() {
+  state.ownerMode = false;
+  updateOwnerUI();
+  showToast('已退出登录', 'success');
+  switchView('home');
+}
+ 
+function updateOwnerUI() {
+  document.getElementById('ownerSection').style.display = state.ownerMode ? '' : 'none';
+  document.getElementById('loginSection').style.display = state.ownerMode ? 'none' : '';
+}
+ 
+// ===== Articles CRUD =====
+function loadArticlesLocal() {
+  const data = localStorage.getItem(STORAGE_KEYS.articles);
+  if (data) {
+    try { state.articles = JSON.parse(data); }
+    catch(e) { state.articles = getDefaultArticles(); saveArticlesLocal(); }
+  } else {
+    state.articles = getDefaultArticles();
+    saveArticlesLocal();
+  }
+}
+ 
+function saveArticlesLocal() {
+  localStorage.setItem(STORAGE_KEYS.articles, JSON.stringify(state.articles));
+}
+ 
+// Legacy aliases
+function loadArticles() { loadArticlesLocal(); }
+function saveArticles() { saveArticlesLocal(); }
+ 
+function getDefaultArticles() {
+  return [
+    {
+      id: 'welcome',
+      title: '欢迎来到我的天地',
+      tags: ['公告', '随笔'],
+      date: '2026-08-17T10:00:00.000Z',
+      content: `# 欢迎来到我的天地\n\n这里是 **xingxw** 的一方天地。\n\n## 关于这个网站\n\n这是一个磨砂玻璃风格的个人网站，左侧是固定边栏，右侧是文章区域。\n\n功能包括：\n\n- 文章发布与阅读\n- Markdown 编辑器\n- 标签分类\n- 文章导出/导入\n\n> 慢慢走，欣赏啊。\n\n## 写在这里的话\n\n没有特别的故事要讲，只是想有一个地方可以安安静静地放些东西。不赶时间，也不急着被谁看见。\n\n如果你也是路过这里的客人，欢迎随便看看。`
+    },
+    {
+      id: 'markdown-guide',
+      title: 'Markdown 语法速查',
+      tags: ['技术', '指南'],
+      date: '2026-08-17T12:00:00.000Z',
+      content: `# Markdown 语法速查\n\n写文章时支持的 Markdown 语法。\n\n## 标题\n\n\`\`\`\n# 一级标题\n## 二级标题\n### 三级标题\n\`\`\`\n\n## 文字格式\n\n**粗体文字**  *斜体文字*  \`行内代码\`\n\n## 列表\n\n- 无序列表项一\n- 无序列表项二\n\n## 引用\n\n> 这是一段引用文字。\n> 可以有多行。\n\n## 链接\n\n[点击访问 GitHub](https://github.com/jianjinx)\n\n## 代码块\n\n\`\`\`\nfunction hello() {\n  console.log('Hello, world!');\n}\n\`\`\`\n\n## 分隔线\n\n---\n\n以上就是支持的语法，够用了。`
+    }
+  ];
+}
+ 
+function getArticle(id) {
+  return state.articles.find(a => a.id === id);
+}
+ 
+async function saveArticle() {
+  const title = document.getElementById('inputTitle').value.trim();
+  const content = document.getElementById('inputContent').value.trim();
+  const tagsStr = document.getElementById('inputTags').value.trim();
+ 
+  if (!title) { showToast('请输入标题', 'error'); return; }
+  if (!content) { showToast('请输入正文内容', 'error'); return; }
+ 
+  const tags = tagsStr ? tagsStr.split(/[,，]/).map(t => t.trim()).filter(Boolean) : [];
+ 
+  if (state.editingArticleId) {
+    const article = getArticle(state.editingArticleId);
+    if (article) {
+      article.title = title;
+      article.content = content;
+      article.tags = tags;
+      article.updatedAt = new Date().toISOString();
+    }
+  } else {
+    const article = {
+      id: Date.now().toString(36),
+      title, content, tags,
+      date: new Date().toISOString(),
+    };
+    state.articles.unshift(article);
+  }
+ 
+  saveArticlesLocal();
+ 
+  const cfg = getGithubConfig();
+  if (cfg && cfg.token) {
+    showToast('正在发布到 GitHub...', 'success');
+    const ok = await pushToGithub();
+    if (ok) {
+      showToast(state.editingArticleId ? '文章已更新并同步' : '文章已发布并同步', 'success');
+    }
+    // pushToGithub already shows error toast on failure
+  } else {
+    showToast(state.editingArticleId ? '文章已更新（本地）' : '文章已发布（本地）', 'success');
+    updateSyncStatus('offline', '未连接');
+  }
+ 
+  resetEditor();
+  switchView('home');
+  renderHome();
+}
+ 
+async function confirmDelete() {
+  if (!state.editingArticleId) return;
+  if (confirm('确定要删除这篇文章吗？此操作不可撤销。')) {
+    state.articles = state.articles.filter(a => a.id !== state.editingArticleId);
+    saveArticlesLocal();
+    const cfg = getGithubConfig();
+    if (cfg && cfg.token) {
+      showToast('正在从 GitHub 删除...', 'success');
+      await pushToGithub();
+    }
+    resetEditor();
+    switchView('home');
+    renderHome();
+    showToast('文章已删除', 'success');
+  }
+}
+ 
+function resetEditor() {
+  state.editingArticleId = null;
+  document.getElementById('inputTitle').value = '';
+  document.getElementById('inputContent').value = '';
+  document.getElementById('inputTags').value = '';
+  document.getElementById('deleteBtn').style.display = 'none';
+  document.getElementById('editorTitle').textContent = '写文章';
+  document.getElementById('previewContent').innerHTML = '';
+  togglePreview(false);
+}
+ 
+function openEditor(articleId) {
+  if (!state.ownerMode) {
+    showPasswordModal();
+    return;
+  }
+  resetEditor();
+  if (articleId) {
+    const article = getArticle(articleId);
+    if (article) {
+      state.editingArticleId = articleId;
+      document.getElementById('inputTitle').value = article.title;
+      document.getElementById('inputContent').value = article.content;
+      document.getElementById('inputTags').value = (article.tags || []).join(', ');
+      document.getElementById('deleteBtn').style.display = '';
+      document.getElementById('editorTitle').textContent = '编辑文章';
+    }
+  }
+  switchView('editor');
+  closeSidebar();
+}
+ 
+// ===== Export / Import =====
+function exportArticles() {
+  const data = JSON.stringify(state.articles, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `xingxw-articles-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('已导出 ' + state.articles.length + ' 篇文章', 'success');
+}
+ 
+function importArticles(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (Array.isArray(data)) {
+        if (confirm('导入将覆盖现有文章，确定继续？')) {
+          state.articles = data;
+          saveArticlesLocal();
+          renderHome();
+          updateSettings();
+          showToast('已导入 ' + data.length + ' 篇文章（本地）。如需同步到 GitHub，请发布或编辑一篇文章', 'success');
+        }
+      } else {
+        showToast('文件格式不正确', 'error');
+      }
+    } catch(err) {
+      showToast('导入失败：' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+ 
+// ===== Markdown Parser =====
+function parseMarkdown(md) {
+  const lines = md.split('\n');
+  let html = '';
+  let inCode = false;
+  let inList = false;
+  let inPara = false;
+ 
+  function closeList() { if (inList) { html += '</ul>'; inList = false; } }
+  function closePara() { if (inPara) { html += '</p>'; inPara = false; } }
+ 
+  for (let line of lines) {
+    // Code block toggle
+    if (line.trim().startsWith('```')) {
+      if (inCode) { html += '</code></pre>'; inCode = false; }
+      else { closePara(); closeList(); html += '<pre><code>'; inCode = true; }
+      continue;
+    }
+    if (inCode) { html += escHtml(line) + '\n'; continue; }
+ 
+    // Empty line
+    if (line.trim() === '') { closePara(); closeList(); continue; }
+ 
+    // Headings
+    if (line.startsWith('### ')) { closePara(); closeList(); html += `<h3>${inline(line.slice(4))}</h3>`; continue; }
+    if (line.startsWith('## '))  { closePara(); closeList(); html += `<h2>${inline(line.slice(3))}</h2>`; continue; }
+    if (line.startsWith('# '))   { closePara(); closeList(); html += `<h1>${inline(line.slice(2))}</h1>`; continue; }
+ 
+    // Blockquote
+    if (line.startsWith('> ')) { closePara(); closeList(); html += `<blockquote>${inline(line.slice(2))}</blockquote>`; continue; }
+ 
+    // HR
+    if (line.trim() === '---' || line.trim() === '***') { closePara(); closeList(); html += '<hr>'; continue; }
+ 
+    // List items
+    if (line.match(/^[-*]\s/) || line.match(/^\d+\.\s/)) {
+      closePara();
+      if (!inList) { html += '<ul>'; inList = true; }
+      const text = line.replace(/^[-*]\s|^\d+\.\s/, '');
+      html += `<li>${inline(text)}</li>`;
+      continue;
+    }
+ 
+    // Regular text
+    closeList();
+    if (!inPara) { html += '<p>'; inPara = true; }
+    html += inline(line) + ' ';
+  }
+ 
+  if (inCode) html += '</code></pre>';
+  closeList(); closePara();
+  return html;
+}
+ 
+function inline(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>');
+}
+ 
+function escHtml(text) {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+ 
+function stripMarkdown(md) {
+  return md
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/^#+\s/gm, '')
+    .replace(/[*`>#-]/g, '')
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1')
+    .trim();
+}
+ 
+// ===== Rendering =====
+function renderHome() {
+  const grid = document.getElementById('articleGrid');
+  if (state.articles.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📝</div>
+        <p>还没有文章${state.ownerMode ? '' : '，站长登录后可以发布'}</p>
+        ${state.ownerMode ? '<button class="btn btn-primary" onclick="openEditor()">写第一篇</button>' : ''}
+      </div>`;
+    return;
+  }
+ 
+  grid.innerHTML = state.articles.map(a => {
+    const date = formatDate(a.date);
+    const excerpt = stripMarkdown(a.content).slice(0, 120) + (a.content.length > 120 ? '...' : '');
+    const tags = (a.tags || []).map(t => `<span>${escHtml(t)}</span>`).join('');
+    const editBadge = state.ownerMode ? '<span class="edit-badge">可编辑</span>' : '';
+    return `
+      <div class="article-card" onclick="readArticle('${a.id}')">
+        <div class="article-card-title">${escHtml(a.title)}${editBadge}</div>
+        <div class="article-card-meta">
+          <span class="date">${date}</span>
+          ${tags ? `<div class="article-card-tags">${tags}</div>` : ''}
+        </div>
+        <div class="article-card-excerpt">${escHtml(excerpt)}</div>
+      </div>`;
+  }).join('');
+}
+ 
+function readArticle(id) {
+  const article = getArticle(id);
+  if (!article) { switchView('home'); return; }
+  state.currentArticleId = id;
+ 
+  const date = formatDate(article.date);
+  const tags = (article.tags || []).map(t => `<span>${escHtml(t)}</span>`).join('');
+  const ownerActions = state.ownerMode ? `
+    <div class="owner-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openEditor('${id}')">编辑</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteFromReader('${id}')">删除</button>
+    </div>` : '';
+ 
+  document.getElementById('articleContent').innerHTML = `
+    <div class="article-view-header">
+      <h1 class="article-view-title">${escHtml(article.title)}</h1>
+      <div class="article-view-meta">
+        <span>${date}</span>
+        ${tags ? `<div class="article-view-tags">${tags}</div>` : ''}
+      </div>
+    </div>
+    <div class="article-body">${parseMarkdown(article.content)}</div>
+    <div class="article-footer">
+      <span style="font-size:.8rem; color:var(--muted);">© xingxw</span>
+      ${ownerActions}
+    </div>`;
+ 
+  switchView('article');
+  window.scrollTo(0, 0);
+}
+ 
+function deleteFromReader(id) {
+  if (confirm('确定要删除这篇文章吗？')) {
+    state.articles = state.articles.filter(a => a.id !== id);
+    saveArticles();
+    showToast('文章已删除', 'success');
+    switchView('home');
+    renderHome();
+  }
+}
+ 
+function formatDate(iso) {
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+ 
+// ===== View Switching =====
+function switchView(view) {
+  state.currentView = view;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById('view-' + view);
+  if (el) el.classList.add('active');
+ 
+  document.querySelectorAll('.nav-link[data-view]').forEach(link => {
+    link.classList.toggle('active', link.dataset.view === view);
   });
-}, { threshold: 0.12 });
  
-document.querySelectorAll('[data-reveal]').forEach(el => observer.observe(el));
+  if (view === 'home') renderHome();
+  if (view === 'settings') updateSettings();
+ 
+  closeSidebar();
+  window.scrollTo(0, 0);
+}
+ 
+function updateSettings() {
+  document.getElementById('articleCount').textContent = state.articles.length;
+  loadGithubConfigForm();
+  const cfg = getGithubConfig();
+  if (cfg && cfg.token) {
+    document.getElementById('cfgSyncStatus').textContent = '已配置，点击「拉取」同步';
+  } else {
+    document.getElementById('cfgSyncStatus').textContent = '未配置';
+  }
+}
+ 
+// ===== Editor Tools =====
+function insertMd(prefix, suffix) {
+  const ta = document.getElementById('inputContent');
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  const selected = ta.value.substring(start, end);
+  const replacement = prefix + (selected || '') + suffix;
+  ta.value = ta.value.substring(0, start) + replacement + ta.value.substring(end);
+  ta.focus();
+  if (!selected) {
+    ta.selectionStart = ta.selectionEnd = start + prefix.length;
+  } else {
+    ta.selectionStart = start;
+    ta.selectionEnd = start + replacement.length;
+  }
+  updatePreview();
+}
+ 
+let previewMode = false;
+function togglePreview(show) {
+  previewMode = show;
+  const ta = document.getElementById('inputContent');
+  const preview = document.getElementById('previewContent');
+  const buttons = document.querySelectorAll('.preview-toggle button');
+  buttons[0].classList.toggle('active', !show);
+  buttons[1].classList.toggle('active', show);
+  if (show) {
+    ta.style.display = 'none';
+    preview.style.display = '';
+    updatePreview();
+  } else {
+    ta.style.display = '';
+    preview.style.display = '';
+  }
+}
+ 
+function updatePreview() {
+  const content = document.getElementById('inputContent').value;
+  document.getElementById('previewContent').innerHTML = parseMarkdown(content);
+}
+ 
+// ===== Sidebar (Mobile) =====
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+ 
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+ 
+// ===== Toast =====
+function showToast(msg, type) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.className = 'toast'; }, 3000);
+}
+ 
+// ===== Init =====
+getStoredPwdHash();
+loadArticlesLocal();          // Load local cache first (fast render)
+updateOwnerUI();
+renderHome();
+ 
+// Then try to sync from GitHub (if configured)
+const _cfg = getGithubConfig();
+if (_cfg) {
+  loadGithubConfigForm();
+  syncFromGithub(false);     // Silent sync on load
+} else {
+  updateSyncStatus('offline', '未连接');
+}
+ 
+// Live preview on input
+document.getElementById('inputContent').addEventListener('input', function() {
+  if (previewMode) updatePreview();
+});
 </script>
- 
 </body>
 </html>
