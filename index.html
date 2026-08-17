@@ -512,8 +512,9 @@ a:hover { color: var(--accent-soft); }
   background-image:
     linear-gradient(#8b5a2b 1px, transparent 1px),
     linear-gradient(90deg, #8b5a2b 1px, transparent 1px);
-  background-size: calc(100% / 14) calc(100% / 14);
-  background-position: calc(100% / 28) calc(100% / 28);
+  /* 15 cells → 15 lines, spacing = 100%/15, first line at half-cell = 100%/30 */
+  background-size: calc(100% / 15) calc(100% / 15);
+  background-position: calc(100% / 30) calc(100% / 30);
   width: min(420px, 85vw); height: min(420px, 85vw);
   position: relative;
 }
