@@ -1447,13 +1447,14 @@ function readArticle(id) {
   window.scrollTo(0, 0);
 }
 
-function deleteFromReader(id) {
+async function deleteFromReader(id) {
   if (confirm('确定要删除这篇文章吗？')) {
     state.articles = state.articles.filter(a => a.id !== id);
     saveArticlesLocal();
     const token = getGithubToken();
     if (token) {
-      pushToGithub();
+      showToast('正在从 GitHub 删除...', 'success');
+      await pushToGithub();
     }
     showToast('文章已删除', 'success');
     switchView('home');
