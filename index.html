@@ -251,8 +251,12 @@
 <script>
 'use strict';
 /* ================================================================
-   渊底回响 ECHOES OF THE ABYSS v7.1 —— 冰岩之歌 · 训练场
-   10 技能 / 冰冻·岩笋 / 47 组融合特效 / 训练场（全技能+增幅任选）
+   渊底回响 ECHOES OF THE ABYSS v7.4 —— 冰岩之歌 · 阶乘共鸣
+   v7.3 基础上修复/强化：
+   ① 融合威力与特效随等级大幅成长（power=1.0+tier*0.6）
+   ② Boss/菁英伤害上限随融合等级提升（Boss 15%→21%）
+   ③ 陨石体积/爆炸随威力放大；龙卷·冻土·万华镜时长随等级延长
+   ④ 修复：Boss死亡于升级选卡期间时游戏不结算的bug（bossDead多重保险）
    ================================================================ */
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -329,6 +333,7 @@ const sfx={
   freeze:()=>{tone(1400,500,.25,'sine',.08);tone(900,300,.3,'sine',.05,.05);},
   thaw:()=>{noise(.15,.1);tone(500,900,.2,'sine',.07);},
   rock:()=>{noise(.25,.16);tone(90,40,.3,'sawtooth',.12);tone(60,30,.35,'square',.08,.04);},
+  unlock:()=>{tone(200,600,.3,'sine',.09);tone(300,900,.4,'triangle',.06,.1);},
 };
 /* ---------- 怪物图鉴 ---------- */
 const MOBS={
@@ -339,12 +344,12 @@ const MOBS={
   cultist:{name:'深渊教徒', hp:12, atk:6, def:0, xp:13, gold:15, minD:3, ranged:1},
   knight: {name:'渊铠骑士', hp:27, atk:8, def:2, xp:22, gold:22, minD:5, windup:1},
   wraith: {name:'噬魂影', hp:17, atk:9, def:0, xp:24, gold:25, minD:6, fast:1},
-  golem:  {name:'腐岩巨像', hp:52, atk:9, def:3, xp:42, gold:75, minD:99, elite:1, slow:1, windup:1},
-  stalker:{name:'影渊猎手', hp:44, atk:11,def:1, xp:52, gold:95, minD:99, elite:1, fast:1, windup:1},
-  lord:   {name:'深渊之主', hp:170,atk:12,def:3, xp:0,  gold:0,  minD:99, boss:1},
+  golem:  {name:'腐岩巨像', hp:68, atk:10,def:3, xp:55, gold:100,minD:99, elite:1, slow:1, windup:1},
+  stalker:{name:'影渊猎手', hp:55, atk:12,def:1, xp:65, gold:120,minD:99, elite:1, fast:1, windup:1},
+  lord:   {name:'深渊之主', hp:260,atk:14,def:3, xp:0,  gold:0,  minD:99, boss:1},
   dummy:  {name:'训练假人', hp:2000,atk:0, def:0, xp:0,  gold:0,  minD:99, dummy:1},
 };
-/* ---------- 技能（10 技：1风 2盾 3火 4冰 5爆 6雷 7岩 8域 9魂 0毁） ---------- */
+/* ---------- 技能 ---------- */
 const SKILLS=[
   {id:'whirl',name:'旋风斩',cost:3,cd:3,lv:1,targeted:false,
    icon:'M12 4a8 8 0 1 1-8 8M12 8a4 4 0 1 1-4 4',
@@ -354,7 +359,7 @@ const SKILLS=[
    tip:'生成护盾抵挡伤害（5 回合）<br>融合时变为【护佑催化】：10回合护盾 + 全套伤害×1.4'},
   {id:'fire',name:'烈焰爆裂',cost:4,cd:5,lv:3,targeted:true,range:6,
    icon:'M12 2c1.5 4 5.5 5 5.5 10a5.5 5.5 0 0 1-11 0c0-3 2-4.5 2.5-7 1.5 1 2.5 2.5 3-3z',
-   tip:'掷出火球，3×3范围爆炸<br>200%伤害 · 射程6'},
+   tip:'掷出火球，3×3范围爆炸<br>200%伤害 · 射程6<br><b>冰火相克</b>：命中冰封敌人立刻融解+150%融解伤害'},
   {id:'ice',name:'寒冰雕像',cost:4,cd:5,lv:4,targeted:true,range:6,
    icon:'M12 2v20M3.5 7l17 10M20.5 7l-17 10M12 6l2-2M12 6l-2-2M12 18l2 2M12 18l-2 2',
    tip:'掷出魔法冰弹，冻结敌人 2 回合<br>（Boss/菁英只冻 1 回合）<br>解冻时受 150% 解冻伤害 · 射程6'},
@@ -470,10 +475,12 @@ let camX=0, camY=0, shake=0, flashScreen=0, flashColor=null, fadeA=0, fadeDir=0;
 let state='title', tNow=0, turnCount=0;
 let aim=null, casting=null;
 let windupHintShown=false;
+let curFusionTier=0;   /* ★ 当前融合等级（影响Boss/菁英伤害上限） */
 function newGame(){
   return {
     depth:1, map:null, explored:null, visible:null, rooms:[],
-    training:false,
+    training:false, eliteAlive:false, eliteName:null,
+    bossDead:false,     /* ★ Boss死亡标记（结算多重保险） */
     player:{x:0,y:0,rx:0,ry:0,hp:36,maxhp:36,atk:4,def:0,lvl:1,xp:0,xpNext:12,
             gold:0,potions:2,sight:7.5,crit:.1,lifesteal:0,goldBoost:1,dir:1,
             lunge:null,flash:0,seed:rnd(0,9),
@@ -489,6 +496,7 @@ function newGame(){
 }
 function skillLocked(i){
   const p=G.player;
+  if(G.training)return false;
   return p.lvl<SKILLS[i].lv&&!p.skillUnlocked[i];
 }
 /* ================================================================
@@ -504,6 +512,7 @@ function genLevel(){
   }
   g.monsters=[]; g.items=[]; particles=[]; floaters=[]; projectiles=[]; rings=[];
   bolts=[]; motes=[]; effects=[]; scorches=[]; aim=null; casting=null;
+  curFusionTier=0; g.bossDead=false;    /* ★ 重置 */
   document.getElementById('aimTip').style.display='none';
   document.getElementById('castTip').style.display='none';
   if(g.training){ genTrainingFloor(); return; }
@@ -544,6 +553,8 @@ function genLevel(){
     if(er&&!g.monsters.some(m=>m.x===er.cx&&m.y===er.cy)){
       spawnMob(key,er.cx,er.cy,g.depth);
       eliteName=MOBS[key].name;
+      g.eliteAlive=true;
+      g.eliteName=eliteName;
     }
   }
   const pool=Object.keys(MOBS).filter(k=>!MOBS[k].boss&&!MOBS[k].elite&&!MOBS[k].dummy&&MOBS[k].minD<=g.depth);
@@ -583,17 +594,15 @@ function genLevel(){
   calcThreat();
   genShop();
   g.banner={main:`第 ${g.depth} 层`,
-            sub:eliteName?`小头目「${eliteName}」潜伏于此 · 敌影 ${g.threat.count} 只`
+            sub:eliteName?`小头目「${eliteName}」封印着石阶 · 敌影 ${g.threat.count} 只`
                          :`敌影 ${g.threat.count} 只 · 怪物力量 +${g.threat.pct}%`,
             life:1};
-  if(eliteName)addLog(`这一层的空气格外沉重——小头目「${eliteName}」镇守着去路。`,'bad');
+  if(eliteName)addLog(`这一层的空气格外沉重——小头目「${eliteName}」封印着石阶，击败它才能深入！`,'bad');
 }
-/* 训练场：独立小房间 + 假人 */
 function genTrainingFloor(){
   const g=G;
   const x0=15,x1=32,y0=11,y1=22;
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)g.map[y][x]=FLOOR;
-  /* 装饰立柱 */
   [[18,13],[29,13],[18,20],[29,20]].forEach(([px,py])=>{g.map[py][px]=WALL;});
   const p=g.player;
   p.x=17; p.y=16; p.rx=17; p.ry=16; p.dashTrail=[];
@@ -679,7 +688,7 @@ function bossSummon(m){
   }
 }
 /* ================================================================
-   神秘商店（含技能提前解锁）
+   神秘商店
    ================================================================ */
 const SHOP_ICONS={
   potion:'<svg viewBox="0 0 24 24"><path d="M10 2h4v4l3 5v8a3 3 0 0 1-3 3h-4a3 3 0 0 1-3-3v-8l3-5V2z"/></svg>',
@@ -796,7 +805,7 @@ function renderShop(){
 function closeShop(descend){
   if(state!=='shop')return;
   showOverlay(false); state='play';
-  if(descend)nextDepth();
+  if(descend)tryDescend();
 }
 /* ---------- 视野 ---------- */
 function computeFOV(){
@@ -827,7 +836,7 @@ function losClear(x0,y0,x1,y1){
   return true;
 }
 /* ================================================================
-   回合逻辑（含冰冻/减速）
+   回合逻辑（含冰冻/融解）
    ================================================================ */
 function monsterAt(x,y){return G.monsters.find(m=>m.alive&&m.x===x&&m.y===y);}
 function tryMove(dx,dy){
@@ -869,14 +878,15 @@ function attackMonster(m){
   else addLog(`你击中${m.name}，造成 ${capped} 点伤害。`);
   if(m.hp<=0)killMonster(m);
 }
+/* ★ 伤害上限随融合等级提升：Boss 15%+2%/级，菁英 22%+1.5%/级 */
 function dmgCap(m,dmg){
-  if(m.boss)return Math.min(dmg,Math.ceil(m.maxhp*.15));
-  if(m.elite)return Math.min(dmg,Math.ceil(m.maxhp*.22));
+  const t=curFusionTier||0;
+  if(m.boss)return Math.min(dmg,Math.ceil(m.maxhp*(.15+t*.02)));
+  if(m.elite)return Math.min(dmg,Math.ceil(m.maxhp*(.22+t*.015)));
   return dmg;
 }
 function killMonster(m){
   m.alive=false;
-  /* 训练假人：击碎后自动重组 */
   if(m.dummy){
     addLog('训练假人被击碎了，正在重组……','sys');
     burst(m.x+.5,m.y+.5,'#8a6a3a',18,{spd:3,g:2});
@@ -889,6 +899,15 @@ function killMonster(m){
       }
     },1200);
     return;
+  }
+  if(m.elite){
+    G.eliteAlive=false;
+    addLog(`小头目「${m.name}」被斩落！封锁石阶的暗影锁链崩解了！`,'gold');
+    flashScreen=.4; shake=Math.max(shake,12);
+    sfx.unlock();
+    burst(G.stairs.x+.5,G.stairs.y+.5,'#c9a227',30,{spd:5,g:0});
+    burst(G.stairs.x+.5,G.stairs.y+.5,'#ffffff',20,{spd:7,g:0});
+    rings.push({x:G.stairs.x+.5,y:G.stairs.y+.5,r:.3,max:2,color:'#e8c96a',life:1});
   }
   G.kills++;
   burst(m.x+.5,m.y+.5,'#7e241b',16,{spd:3});
@@ -910,11 +929,11 @@ function killMonster(m){
   else if(r<.36)G.items.push(makeItem('gold',m.x,m.y));
   if(m.elite){
     G.items.push(makeItem('chest',m.x,m.y));
-    addLog(`小头目「${m.name}」被斩落，留下了宝箱！`,'gold');
-    flashScreen=.35; shake=Math.max(shake,10);
+    addLog(`小头目留下了宝箱！`,'gold');
   }
-  if(m.boss){ setTimeout(win,900); }
+  if(m.boss){ G.bossDead=true; setTimeout(win,900); }   /* ★ 标记+延迟结算 */
   gainXP(m.xp);
+  checkStairsBtn();
 }
 function gainXP(n){
   const p=G.player;
@@ -950,7 +969,6 @@ function endTurn(){
     if(p.shieldTurns<=0&&p.shield>0){p.shield=0;addLog('渊盾消散了。');}
     else if(p.shield>0&&p.shieldTurns===3&&!g.training)toast('渊盾将在 3 回合后消散');
   }
-  /* 训练场：无限回响 + 零冷却 */
   if(g.training){
     p.energy=p.maxEnergy;
     for(let i=0;i<p.skillCd.length;i++)p.skillCd[i]=0;
@@ -960,16 +978,16 @@ function endTurn(){
     if(!m.alive)continue;
     if(state!=='play')break;
     if(m.flash>0)m.flash-=.5;
-    /* 冰冻：跳过行动，解冻时受解冻伤害 */
     if(m.frozen>0){
       m.frozen--;
       if(m.frozen<=0){
         const dmg=Math.max(1,Math.round(p.atk*1.5*p.skillBoost));
-        m.hp-=dmg; m.flash=1; m.hpShow=1.5;
-        floatText(m.x+.5,m.y-.1,'解冻 -'+dmg,'#aef0ff');
+        const capped=dmgCap(m,dmg);
+        m.hp-=capped; m.flash=1; m.hpShow=1.5;
+        floatText(m.x+.5,m.y-.1,'解冻 -'+capped,'#aef0ff');
         burst(m.x+.5,m.y+.5,'#aef0ff',12,{spd:3,g:.5});
         sfx.thaw();
-        addLog(`${m.name}解冻，受到 ${dmg} 点解冻伤害。`);
+        addLog(`${m.name}解冻，受到 ${capped} 点解冻伤害。`);
         if(m.hp<=0){killMonster(m);continue;}
       }else continue;
     }
@@ -988,17 +1006,25 @@ function monsterAct(m){
   const p=G.player, d2=dist2(m.x,m.y,p.x,p.y), d=Math.sqrt(d2);
   const sees=d<=7.5 && losClear(m.x,m.y,p.x,p.y);
   if(m.boss){
-    if(m.charging){
+    if(m.charging===1){
       m.charging=0;
       shake=14; flashScreen=.5; sfx.boss();
       burst(m.x+.5,m.y+.5,'#c0392b',40,{spd:6});
       burst(m.x+.5,m.y+.5,'#e8c96a',20,{spd:4});
       addLog('深渊之主释放了怒焰！','bad');
-      if(dist2(m.x,m.y,p.x,p.y)<=6.5)damagePlayer(14+G.depth,m);
+      if(dist2(m.x,m.y,p.x,p.y)<=6.5)damagePlayer(16+G.depth,m);
       return;
     }
-    if(!m.enraged&&m.hp<m.maxhp*.4){
-      m.enraged=1; m.atk=Math.round(m.atk*1.4);
+    if(m.charging===2){
+      m.charging=0;
+      sfx.meteor(); shake=Math.max(shake,10);
+      addLog('暗影陨石从天而降——快离开标记点！','bad');
+      effects.push({type:'meteor',tx:p.x+.5,ty:p.y+.5,delay:.35,t:0,
+        mult:0,scorchR:1.6,dark:true,dmg:15+G.depth*1.5});
+      return;
+    }
+    if(!m.enraged&&m.hp<m.maxhp*.5){
+      m.enraged=1; m.atk=Math.round(m.atk*1.5);
       addLog('深渊之主暴怒了！黑暗沸腾翻涌！','bad');
       shake=12; flashScreen=.4; sfx.boss();
       burst(m.x+.5,m.y+.5,'#c0392b',30,{spd:5});
@@ -1009,10 +1035,12 @@ function monsterAct(m){
       const adds=G.monsters.filter(o=>o.alive&&!o.boss).length;
       if(adds<5){ bossSummon(m); return; }
     }
-    const chargeGap=m.enraged?3:5;
-    if(turnCount%chargeGap===chargeGap-1 && d<=7){
-      m.charging=1;
-      addLog('深渊之主在凝聚黑暗之力——闪避或拉开距离！','bad');
+    const gap=m.enraged?3:5;
+    if(turnCount%gap===gap-1 && d<=8){
+      m.charging=(turnCount%(gap*2)>=gap)?2:1;
+      addLog(m.charging===2
+        ?'深渊之主在天穹凝聚暗影陨石——快闪避！'
+        :'深渊之主在凝聚黑暗之力——闪避或拉开距离！','bad');
       return;
     }
   }
@@ -1063,7 +1091,6 @@ function stepMob(m,nx,ny){
   if(nx!==m.x)m.dir=Math.sign(nx-m.x)||m.dir;
   m.x=nx; m.y=ny; return true;
 }
-/* 冰冻辅助 */
 function freezeMob(m,turns){
   if(!m.alive)return;
   if(m.boss||m.elite)turns=Math.min(turns,1);
@@ -1106,11 +1133,22 @@ function tryDodge(){
 /* ================================================================
    基础技能（瞬发）
    ================================================================ */
-function skillHit(m,mult,boost=1,noDef=false){
+function skillHit(m,mult,boost=1,noDef=false,isFire=false){
   const p=G.player;
   let dmg=p.atk*mult*p.skillBoost*boost;
   const crit=Math.random()<p.crit;
   if(crit)dmg*=1.6;
+  if(isFire&&m.frozen>0&&m.alive){
+    m.frozen=0;
+    const thaw=Math.max(1,Math.round(p.atk*1.5*p.skillBoost*boost));
+    dmg+=thaw;
+    floatText(m.x+.5,m.y-.8,'融解! -'+thaw,'#ff9a5a');
+    burst(m.x+.5,m.y+.5,'#e8f0f5',12,{spd:3,g:-.5});
+    burst(m.x+.5,m.y+.5,'#ff7a2a',10,{spd:4,g:1});
+    rings.push({x:m.x+.5,y:m.y+.5,r:.2,max:1.3,color:'#e8f0f5',life:.7});
+    sfx.thaw(); sfx.fire();
+    addLog(`坚冰被烈焰融化！${m.name}受到 ${thaw} 点融解伤害！`,'good');
+  }
   dmg=Math.max(1,Math.round(dmg+ri(-1,1)-(noDef?0:m.def)));
   dmg=dmgCap(m,dmg);
   m.hp-=dmg; m.flash=1; m.hpShow=1.5;
@@ -1156,7 +1194,7 @@ function castFireInner(tx,ty,boost=1,wide=false){
       addLog('烈焰爆裂！','good');
       for(const m of G.monsters){
         if(!m.alive)continue;
-        if(cheb(m.x,m.y,tx,ty)<=R)skillHit(m,2,boost);
+        if(cheb(m.x,m.y,tx,ty)<=R)skillHit(m,2,boost,false,true);
       }
       updateHUD();
     }
@@ -1599,9 +1637,10 @@ function fxCarpet(tx,ty,tier,power){
     power,r:1.8+tier*.3,next:0});
   sfx.frag();
 }
+/* ★ 特效随等级：龙卷时长/高度随 tier 延长增高 */
 function fxTornado(tx,ty,tier,power){
-  effects.push({type:'tornado',x:tx+.5,y:ty+.5,t:0,dur:2.4,
-    power,r:1.1+tier*.15,tick:0});
+  effects.push({type:'tornado',x:tx+.5,y:ty+.5,t:0,dur:2.2+tier*.35,
+    power,r:1.1+tier*.18,tier,tick:0});
   sfx.fire(); shake=7;
   scorches.push({x:tx+.5,y:ty+.5,r:1,life:8,elem:'fire'});
 }
@@ -1623,6 +1662,18 @@ function fxGravity(tx,ty,tier,power){
   effects.push({type:'gravity',x:tx+.5,y:ty+.5,t:0,dur:2.4,
     power,r:2.8+tier*.4,tick:0,done:false});
   sfx.shock(); sfx.boss();
+}
+/* ★ 特效随等级：暴雪时长随 tier 延长 */
+function fxBlizzard(cx,cy,tier,power){
+  effects.push({type:'blizzard',x:cx,y:cy,t:0,dur:1.8+tier*.4,tick:0,power,tier});
+  sfx.freeze(); sfx.nova(); shake=10;
+  flashColor={color:'#aef0ff',a:.5};
+  for(const m of G.monsters)
+    if(m.alive&&G.visible[m.y]&&G.visible[m.y][m.x]){
+      skillHit(m,power*.9,true);
+      if(m.alive)freezeMob(m,3);
+    }
+  addLog('霜永冻土！暴风雪冻结了整片视野！','gold');
 }
 /* ================================================================
    融合爆发：全组合专属路由
@@ -1693,7 +1744,9 @@ function fusionBurst(){
   document.getElementById('castTip').style.display='none';
   const p=G.player, parts=c.parts, tier=parts.length, R=c.recipe;
   const catalyst=!!R.shield;
-  const power=(1.1+tier*.4)*(catalyst?1.4:1);
+  /* ★ 威力随等级大幅成长：Lv2=2.2 / Lv3=2.8 / Lv4=3.4 */
+  const power=(1.0+tier*.6)*(catalyst?1.4:1);
+  curFusionTier=tier;   /* ★ 影响伤害上限，持续到效果结算完 */
   const fireTile=c.fireTile||{x:p.x,y:p.y};
   const fx=fireTile.x+.5, fy=fireTile.y+.5;
   const cx=p.x+.5, cy=p.y+.5;
@@ -1817,7 +1870,7 @@ function fusionBurst(){
             burst(fx,fy,'#ff7a2a',30,{spd:5});
             burst(fx,fy,'#ffd766',16,{spd:3});
             for(const m of G.monsters)
-              if(m.alive&&cheb(m.x,m.y,fireTile.x,fireTile.y)<=1)skillHit(m,power*1.1,true);
+              if(m.alive&&cheb(m.x,m.y,fireTile.x,fireTile.y)<=1)skillHit(m,power*1.1,true,false,true);
             const n=4+tier;
             for(let k=0;k<n;k++){
               const a=k/n*Math.PI*2+rnd(-.3,.3), d=rnd(1.2,2.4);
@@ -1835,7 +1888,7 @@ function fusionBurst(){
         sfx.fire(); sfx.shock(); shake=12;
         for(const m of G.monsters){
           if(!m.alive||cheb(m.x,m.y,bt.x,bt.y)>3)continue;
-          skillHit(m,power,true);
+          skillHit(m,power,true,false,true);
           if(m.alive){
             const kx=Math.sign(m.x-bt.x)||1,ky=Math.sign(m.y-bt.y)||1;
             for(let s=0;s<2;s++)stepMob(m,m.x+kx,m.y+ky)||stepMob(m,m.x+kx,m.y)||stepMob(m,m.x,m.y+ky);
@@ -1849,6 +1902,7 @@ function fusionBurst(){
         for(const m of G.monsters){
           if(!m.alive||cheb(m.x,m.y,fireTile.x,fireTile.y)>1)continue;
           execOrHit(m,power,.4);
+          if(m.alive&&m.frozen>0)skillHit(m,0,1,false,true);
         }
         for(let k=0;k<14;k++)
           particles.push({x:fx+rnd(-.8,.8),y:fy+rnd(-.5,.5),
@@ -1862,7 +1916,7 @@ function fusionBurst(){
         sfx.nova(); sfx.fire(); shake=14;
         flashColor={color:'#ff7a2a',a:.6};
         for(const m of vis())
-          skillHit(m,power*((m.x===fireTile.x&&m.y===fireTile.y)?1.2:.95),true);
+          skillHit(m,power*((m.x===fireTile.x&&m.y===fireTile.y)?1.2:.95),true,false,true);
         addLog('燎原终焉！烈焰新星吞没了视野！','gold');
         break;}
       case 'arcmine':{
@@ -1918,8 +1972,9 @@ function fusionBurst(){
         sfx.frag(); sfx.reap(); shake=8;
         addLog('弹片绞肉机！破片涡旋绞碎了一切！','gold');
         break;}
+      /* ★ 万华镜：时长随等级延长 */
       case 'kaleido':{
-        effects.push({type:'kaleido',x:fx,y:fy,t:0,dur:2.4,tick:0,power,r:3+tier*.3,finale:false});
+        effects.push({type:'kaleido',x:fx,y:fy,t:0,dur:1.9+tier*.25,tick:0,power,r:3+tier*.3,finale:false,tier});
         sfx.frag(); sfx.levelup(); shake=8;
         for(const m of G.monsters)
           if(m.alive&&cheb(m.x,m.y,fireTile.x,fireTile.y)<=1)skillHit(m,power,true);
@@ -1937,11 +1992,7 @@ function fusionBurst(){
         addLog('震世回响！大地随回响震颤！','gold');
         break;}
       case 'blizzard':{
-        effects.push({type:'blizzard',x:cx,y:cy,t:0,dur:2.2,tick:0,power});
-        sfx.freeze(); sfx.nova(); shake=10;
-        flashColor={color:'#aef0ff',a:.5};
-        for(const m of vis()){skillHit(m,power*.9,true);if(m.alive)freezeMob(m,3);}
-        addLog('霜永冻土！暴风雪冻结了整片视野！','gold');
+        fxBlizzard(cx,cy,tier,power);
         break;}
       case 'icewind':{
         effects.push({type:'icewind',x:cx,y:cy,t:0,dur:1.5,tick:0,power});
@@ -1954,12 +2005,12 @@ function fusionBurst(){
         addLog('寒风刃舞！冰刃风暴冻结了周围！','gold');
         break;}
       case 'steam':{
-        effects.push({type:'steam',x:fx,y:fy,t:0,dur:1.6,tick:0,power,r:1.8+tier*.2});
+        effects.push({type:'steam',x:fx,y:fy,t:0,dur:1.3+tier*.25,tick:0,power,r:1.8+tier*.2});
         sfx.fire(); sfx.freeze(); shake=10;
         flashScreen=Math.max(flashScreen,.3);
         for(const m of G.monsters){
           if(!m.alive||cheb(m.x,m.y,fireTile.x,fireTile.y)>1)continue;
-          skillHit(m,power,true);
+          skillHit(m,power,true,false,true);
           if(m.alive){m.slowT=3;freezeMob(m,1);}
         }
         addLog('冰火炼狱！蒸汽爆裂撕扯着敌人！','gold');
@@ -1970,7 +2021,7 @@ function fusionBurst(){
         for(const m of G.monsters){
           if(!m.alive||cheb(m.x,m.y,fireTile.x,fireTile.y)>1)continue;
           freezeMob(m,2);
-          skillHit(m,power*.6,true);
+          skillHit(m,power*.6,true,false,true);
         }
         addLog('碎冰晶爆！敌人被封入冰晶，碎裂将至。','gold');
         break;}
@@ -2047,7 +2098,7 @@ function fusionBurst(){
             sfx.rock(); sfx.fire(); shake=13; flashScreen=Math.max(flashScreen,.35);
             effects.push({type:'magma',x:fx,y:fy,t:0,dur:1.4,tick:0,power});
             for(const m of G.monsters)
-              if(m.alive&&cheb(m.x,m.y,fireTile.x,fireTile.y)<=1)skillHit(m,power*1.1,true);
+              if(m.alive&&cheb(m.x,m.y,fireTile.x,fireTile.y)<=1)skillHit(m,power*1.1,true,false,true);
             for(let k=0;k<3;k++){
               const a=k/3*Math.PI*2, d=rnd(.8,1.6);
               const bx=Math.round(fireTile.x+Math.cos(a)*d), by=Math.round(fireTile.y+Math.sin(a)*d);
@@ -2121,7 +2172,7 @@ function fusionBurst(){
     }
     if(catalyst)applyAegis(tier);
   }else{
-  /* ============ 通用元素爆发（熔核陨星流星雨保留） ============ */
+  /* ============ 通用元素爆发（熔核陨星流星雨：威力/体积随等级放大） ============ */
   const mainElem=ELEM[SKILLS[parts[0]].id];
   flashColor={color:mainElem.color,a:.5+tier*.1};
   flashScreen=Math.max(flashScreen,.4+tier*.1);
@@ -2142,8 +2193,9 @@ function fusionBurst(){
     rings.push({x:fx,y:fy,r:.3,max:rad+.8,color:'#ff7a2a',life:1});
     burst(fx,fy,'#ff7a2a',20+R.fire*8,{spd:4});
     for(const m of G.monsters)
-      if(m.alive&&cheb(m.x,m.y,fireTile.x,fireTile.y)<=rad)skillHit(m,power,true);
+      if(m.alive&&cheb(m.x,m.y,fireTile.x,fireTile.y)<=rad)skillHit(m,power,true,false,true);
     if(R.fire>=2){
+      /* ★ 陨石：数量随火数、单发威力随 power、灼烧范围随等级 */
       const n=2+R.fire*2;
       for(let k=0;k<n;k++){
         const mv=vis();
@@ -2152,7 +2204,7 @@ function fusionBurst(){
         else{const a=rnd(0,Math.PI*2),d=rnd(0,2.5);tx=Math.round(fireTile.x+Math.cos(a)*d);ty=Math.round(fireTile.y+Math.sin(a)*d);}
         if(tx<0||ty<0||tx>=MAP_W||ty>=MAP_H||G.map[ty][tx]===WALL){tx=fireTile.x;ty=fireTile.y;}
         effects.push({type:'meteor',tx:tx+.5,ty:ty+.5,delay:k*.22+.1,t:0,
-          mult:power*.6,scorchR:R.fire>=3?1.4:1});
+          mult:power*.7,scorchR:.8+R.fire*.3});
       }
       addLog('天降流星雨！','gold');
     }else addLog('融合火焰在目标处炸裂！','good');
@@ -2261,8 +2313,10 @@ function fusionBurst(){
   }
   if(catalyst)applyAegis(tier);
   }
-  addLog(`释放 ${tier} 级融合技「${c.name}」！`,'gold');
+  addLog(`释放 ${tier} 级融合技「${c.name}」（威力 ×${power.toFixed(1)}）！`,'gold');
   computeFOV(); checkStairsBtn(); updateHUD();
+  /* ★ 融合等级加成窗口：2.5秒内（含持续效果结算）伤害上限享受等级加成 */
+  setTimeout(()=>{curFusionTier=0;},2500);
 }
 function cancelAim(){
   aim=null;
@@ -2369,6 +2423,7 @@ function openLevelUp(){
   showOverlay(true);
   document.querySelectorAll('#panelBox .card').forEach(el=>{
     el.addEventListener('click',()=>{
+      if(state!=='levelup')return;   /* ★ 状态守卫：防止结算后误点 */
       const o=opts[+el.dataset.i];
       p.maxhp+=3; p.hp=Math.min(p.maxhp,p.hp+Math.round(p.maxhp*.3));
       p.blessLv[o.id]=(p.blessLv[o.id]||0)+1;
@@ -2385,6 +2440,8 @@ function openLevelUp(){
           addLog(`解锁新技能「${sk.name}」！`,'gold');
         }
       }
+      /* ★ 若Boss已在升级期间死亡，选卡结束后立即结算 */
+      if(G&&G.bossDead)setTimeout(win,400);
     });
   });
 }
@@ -2462,7 +2519,8 @@ function startTraining(){
   addLog('—— 训练场 ——','sys');
   addLog('全部技能已解锁，融合上限 Lv4 · 三融合槽 · 回响无限 · 技能零冷却。','sys');
   addLog('假人不会还手，被击碎后 1 秒自动重组——随便炸！','sys');
-  addLog('C 键 /「增幅」按钮：自由选择卡片增幅。T 键 / 按钮离开训练场。','gold');
+  addLog('C 键 /「增幅」按钮：自由选择卡片增幅。T 键 / 按钮离开训练场。','sys');
+  addLog('融合威力随等级大增：Lv2×2.2 / Lv3×2.8 / Lv4×3.4，试试 2+2 自我共鸣。','gold');
   updateHUD(); checkStairsBtn(); updateSkillbar();
 }
 function score(){return G.goldEarned+G.depth*50+G.kills*10;}
@@ -2498,8 +2556,10 @@ function die(){
     document.getElementById('againBtn').addEventListener('click',startGame);
   },800);
 }
+/* ★ 修复：Boss死于升级选卡期间时也能正常结算 */
 function win(){
-  if(state!=='play'||G.training)return;
+  if(!G||G.training||state==='win'||state==='dead')return;
+  if(state!=='play'&&state!=='levelup')return;   /* 兼容升级界面 */
   state='win'; cancelAim(); casting=null;
   document.getElementById('castTip').style.display='none';
   saveBest();
@@ -2529,16 +2589,17 @@ function showTitle(){
   document.getElementById('panelBox').innerHTML=`
     <h1>渊底回响<em>ECHOES OF THE ABYSS</em></h1>
     <div class="rule"></div>
-    <div class="sub">传说地牢第十层沉睡着深渊之主。<br>越深，敌影越多、越强——第 3/5/7 层有小头目镇守。</div>
+    <div class="sub">传说地牢第十层沉睡着深渊之主。<br>越深，敌影越多、越强——第 3/5/7 层有小头目封印石阶。</div>
     <div class="keys">
       <b>移动 / 攻击</b> 方向键 / WASD / 点击 · <b>药剂</b> Q · <b>下楼</b> E · <b>商人</b> B（站石阶）· <b>小地图</b> M<br>
       <i>闪避</i> 空格 · <i>技能</i> 1~9、0 —— <b>风 盾 火 冰 爆 雷 岩 域 魂 毁</b> 十大回响<br>
       <i>融合技</i> 拖技能图标到另一技能上（可同技能！F/G/H 释放）—— <b>47 组二元融合全部专属演出</b><br>
-      冰系：霜永冻土 / 寒风刃舞 / 冰火炼狱 / 碎冰晶爆 / 冻雷贯体 / 极地冲击波 / 冰封魂断 / 冰封星灭 / 冰铸石林<br>
-      岩系：地脉崩陷 / 旋岩舞 / 熔岩喷泉 / 碎岩爆 / 雷殛石林 / 地震断层 / 葬骨棘 / 大陆分裂<br>
+      <b>阶乘共鸣</b>：融合威力 ×2.2/×2.8/×3.4（Lv2/3/4）· Boss伤害上限随融合等级提升 · 特效随等级变大<br>
+      <b>冰火相克</b>：先冰封敌人（按4），再用火系技能命中可立刻融解并造成 150% 融解伤害！<br>
+      <b>小头目封印</b>：第 3/5/7 层的石阶被暗影锁链封锁，击败小头目才能深入<br>
       <i>渊盾</i>融合=【<b>护佑催化</b>】：10 回合护盾 + 全套伤害 ×1.4 · 商人有<b>技能秘传</b>可提前解锁技能<br>
       <b>训练场</b>：独立房间 + 无限假人 · 全技能解锁 · 回响无限零冷却 · <b>增幅卡片任选</b>（C 键）<br>
-      <b>深渊之主</b>召唤眷属、40% 血量暴怒，大血条 + 单次伤害上限防秒杀<br>
+      <b>深渊之主</b>召唤眷属、释放暗影陨石、50% 血量暴怒 · 击杀后必定结算胜利<br>
       技能、闪避与药剂均<b>瞬发</b>，只有移动和普攻推进回合 · 手机可直接触屏游玩
     </div>
     ${b?`<div class="best">历史最佳 · 得分 <b>${b.s}</b>（第 ${b.depth} 层）</div>`:''}
@@ -2565,7 +2626,8 @@ function startGame(){
   addLog('—— 第 1 层 ——','sys');
   addLog(`敌影 ${G.threat.count} 只，怪物力量 +${G.threat.pct}%。`,'sys');
   addLog('十大回响：风盾火冰爆雷岩域魂毁（1~9、0）。空格闪避、技能全部瞬发。','sys');
-  addLog('拖技能到技能上融合：试试冰+冰的「霜永冻土」或岩+岩的「地脉崩陷」。商人有技能秘传。','gold');
+  addLog('融合威力随等级大增：Lv2×2.2 / Lv3×2.8 / Lv4×3.4，Boss上限也随等级提升！','gold');
+  addLog('冰火相克：先冰封（按4）再用火球（按3）命中可立刻融解+150%融解伤害！','gold');
   updateHUD(); checkStairsBtn(); updateSkillbar();
 }
 /* ================================================================
@@ -2576,7 +2638,7 @@ const keyMap={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
 let heldDir=null, holdTimer=0;
 let autoPath=null, autoTimer=0;
 document.addEventListener('keydown',e=>{
-  if(state==='title'){startGame();return;}
+  if(state==='title')return;
   if(state==='levelup')return;
   if(state==='bless'){
     if(e.key==='Escape'||e.key==='c'||e.key==='C')closeBlessPicker();
@@ -2627,8 +2689,18 @@ window.addEventListener('contextmenu',e=>{
 });
 function tryDescend(){
   const g=G;
-  if(state==='play'&&!g.training&&!g.monsters.some(m=>m.boss&&m.alive)&&g.depth<MAX_DEPTH
-     &&g.player.x===g.stairs.x&&g.player.y===g.stairs.y)nextDepth();
+  if(state!=='play'||g.training)return;
+  if(g.depth>=MAX_DEPTH)return;
+  if(g.monsters.some(m=>m.boss&&m.alive))return;
+  if(!(g.player.x===g.stairs.x&&g.player.y===g.stairs.y))return;
+  if(g.eliteAlive){
+    toast(`「${g.eliteName}」镇守此地，石阶被暗影锁链封印！`);
+    addLog(`暗影锁链封锁着石阶——必须击败「${g.eliteName}」才能深入！`,'bad');
+    sfx.skillFail();
+    shake=Math.max(shake,4);
+    return;
+  }
+  nextDepth();
 }
 function checkStairsBtn(){
   const tr=!!(G&&G.training);
@@ -2637,11 +2709,16 @@ function checkStairsBtn(){
   const on=onStairs();
   const btn=document.getElementById('stairsBtn');
   btn.style.display=on?'':'none';
-  btn.classList.toggle('pulse',on);
+  const locked=G&&G.eliteAlive;
+  btn.classList.toggle('pulse',on&&!locked);
+  btn.textContent=locked?'🔒 封印中':'深入下层（E）';
+  btn.disabled=!!locked;
   const sb=document.getElementById('shopBtn');
   sb.style.display=(on&&G.shop)?'':'none';
   sb.classList.toggle('pulse',on&&!!G.shop);
-  if(on&&!btn.dataset.warned){addLog('找到向下的石阶。','gold');btn.dataset.warned=1;}
+  if(on&&!locked&&!btn.dataset.warned){addLog('找到向下的石阶。','gold');btn.dataset.warned=1;}
+  if(on&&locked&&!btn.dataset.lockwarned){btn.dataset.lockwarned=1;
+    addLog(`石阶被暗影锁链封印——击败「${G.eliteName}」才能通过！`,'bad');}
   if(on&&G.shop&&!sb.dataset.warned){sb.dataset.warned=1;
     addLog('神秘商人在石阶旁支起了摊位（按 B 交易）。','gold');}
 }
@@ -2654,7 +2731,7 @@ cv.addEventListener('pointermove',e=>{
   if(gx>=0&&gy>=0&&gx<MAP_W&&gy<MAP_H){aim.x=gx;aim.y=gy;}
 });
 cv.addEventListener('pointerdown',e=>{
-  if(state==='title'){startGame();return;}
+  if(state==='title')return;
   if(state!=='play'||casting)return;
   initAudio();
   const [gx,gy]=screenToTile(e.clientX,e.clientY);
@@ -2698,8 +2775,9 @@ document.querySelectorAll('#pad button').forEach(b=>{
   let iv=null;
   const go=()=>{cancelAim();tryMove(...b.dataset.d.split(',').map(Number));};
   b.addEventListener('pointerdown',e=>{
-    e.preventDefault();initAudio();
-    if(state==='title'){startGame();return;}
+    e.preventDefault();
+    if(state==='title')return;
+    initAudio();
     if(b.dataset.dodge!==undefined){tryDodge();return;}
     go(); iv=setInterval(go,150);
   });
@@ -2721,7 +2799,7 @@ document.getElementById('muteBtn').addEventListener('click',()=>{
   document.getElementById('muteBtn').style.borderColor=muted?'#5a2020':'';
 });
 document.getElementById('overlay').addEventListener('pointerdown',e=>{
-  if(state==='title'){ initAudio(); startGame(); }
+  /* 标题页必须点击按钮 */
 });
 document.getElementById('overlay').addEventListener('click',e=>{
   if(state==='shop'&&e.target.id==='overlay')closeShop(false);
@@ -2772,14 +2850,14 @@ function buildSkillbar(){
     </div>`).join('');
   skillbarEl.querySelector('.dodge').addEventListener('pointerdown',e=>{
     e.preventDefault(); initAudio();
-    if(state==='title'){startGame();return;}
+    if(state==='title')return;
     tryDodge();
   });
   skillbarEl.querySelectorAll('.skill[data-i]').forEach(el=>{
     el.addEventListener('pointerdown',e=>{
       e.preventDefault();
       initAudio();
-      if(state==='title'){startGame();return;}
+      if(state==='title')return;
       if(state!=='play')return;
       startSkillDrag(+el.dataset.i,e);
     });
@@ -2920,7 +2998,7 @@ function updateSkillbar(){
     const parts=f.parts, tier=parts.length;
     const cost=fusionCost(parts);
     fs.style.display='';
-    fs.dataset.tip=`<b>${fusionName(parts)}</b> · Lv${tier}/${p.maxFusionTier}<br>${parts.map(i=>SKILLS[i].name).join(' + ')}${countElems(parts).shield?'<br>含渊盾：护佑催化（10回合护盾+伤害×1.4）':''}<br>费用 ${cost} 回响 · 咏唱后专属演出爆发<br>${'FGH'[s]}/点击/拖出释放 · 拖组件入槽升阶 · 槽拖到自身=共鸣 · 长按/右键清空`;
+    fs.dataset.tip=`<b>${fusionName(parts)}</b> · Lv${tier}/${p.maxFusionTier} · 威力×${(1.0+tier*.6).toFixed(1)}<br>${parts.map(i=>SKILLS[i].name).join(' + ')}${countElems(parts).shield?'<br>含渊盾：护佑催化（10回合护盾+伤害×1.4）':''}<br>费用 ${cost} 回响 · 咏唱后专属演出爆发<br>${'FGH'[s]}/点击/拖出释放 · 拖组件入槽升阶 · 槽拖到自身=共鸣 · 长按/右键清空`;
     for(let k=0;k<4;k++){
       const svg=fs.querySelector('.f'+k);
       if(k<tier){svg.style.display='';svg.querySelector('path').setAttribute('d',SKILLS[parts[k]].icon);}
@@ -2969,8 +3047,9 @@ function updateBossBar(){
   bar.querySelector('.bbFill').style.transform=`scaleX(${clamp(tgt.hp/tgt.maxhp,0,1)})`;
   bar.querySelector('.bbName').textContent=
     (tgt.boss?'⚠ 深渊之主':'菁英 · '+tgt.name)+(tgt.enraged?' · 暴怒':'')+(tgt.frozen>0?' · 冻结':'');
+  const capP=tgt.boss?Math.round((.15+(curFusionTier||0)*.02)*100):Math.round((.22+(curFusionTier||0)*.015)*100);
   bar.querySelector('.bbTxt').textContent=
-    `${Math.max(0,tgt.hp)} / ${tgt.maxhp} · 单次伤害上限 ${tgt.boss?'15%':'22%'}`;
+    `${Math.max(0,tgt.hp)} / ${tgt.maxhp} · 当前单次上限 ${capP}%`;
 }
 const logEl=document.getElementById('log');
 function addLog(txt,cls){
@@ -3114,7 +3193,8 @@ function renderLighting(ox,oy,sx,sy){
   glow(p.rx+.5,p.ry+.5,TS*2.6,'255,170,80',.08*flick);
   for(const pr of projectiles){
     const x=lerp(pr.x0,pr.x1,pr.p), y=lerp(pr.y0,pr.y1,pr.p);
-    glow(x,y,TS*(pr.big?2:1.2),'255,120,40',pr.big?.2:.1);
+    if(pr.color==='#aef0ff')glow(x,y,TS*(pr.big?2:1.2),'174,240,255',pr.big?.2:.1);
+    else glow(x,y,TS*(pr.big?2:1.2),'255,120,40',pr.big?.2:.1);
   }
   if(st.x>=0&&G.visible[st.y]&&G.visible[st.y][st.x])
     glow(st.x+.5,st.y+.5,TS*1.2,'232,201,106',.09*(.6+.4*Math.sin(tNow*2.4)));
@@ -3131,7 +3211,8 @@ function renderLighting(ox,oy,sx,sy){
     }
   }
   for(const ef of effects){
-    if(ef.type==='meteor'&&ef.t>0)glow(ef.tx,ef.ty,TS*2.4,'255,122,42',.3);
+    if(ef.type==='meteor'&&ef.t>0)
+      glow(ef.tx,ef.ty,TS*2.4,ef.dark?'192,57,43':'255,122,42',.3);
     if(ef.type==='firepit')glow(ef.x,ef.y,ef.r*TS*1.8,'255,100,30',.3*(1-ef.t/ef.dur));
     if(ef.type==='storm')glow(ef.x,ef.y,TS*(2.5+ef.blades),'232,201,106',.2);
     if(ef.type==='slash')glow(ef.x,ef.y,TS*1.6,'255,58,74',.25*(1-ef.t/ef.dur));
@@ -3140,6 +3221,7 @@ function renderLighting(ox,oy,sx,sy){
     if(ef.type==='tornado')glow(ef.x,ef.y,TS*2.2,'255,122,42',.25);
     if(ef.type==='plasma')glow(ef.x,ef.y,ef.r*TS*1.5,'255,120,40',.25);
     if(ef.type==='collapse')glow(ef.x,ef.y,TS*1.6,'190,150,255',.3);
+    if(ef.type==='gravity')glow(ef.x,ef.y,ef.r*TS*.8,'190,150,255',.2);
     if(ef.type==='spikes')glow(ef.x,ef.y,TS*2.5,'255,255,255',.4);
     if(ef.type==='dualspin')glow(ef.x,ef.y,TS*(ef.radius+1),'232,201,106',.2);
     if(ef.type==='carpet')glow(ef.x,ef.y,ef.r*TS*1.2,'255,170,60',.2);
@@ -3165,32 +3247,53 @@ function drawEffects(){
       const ft=(ef.t-ef.delay)/.45;
       if(ft>=1){
         effects.splice(i,1);
-        sfx.meteor(); shake=Math.max(shake,8);
-        rings.push({x:ef.tx,y:ef.ty,r:.2,max:1.6+ef.scorchR,color:'#ff7a2a',life:1});
-        rings.push({x:ef.tx,y:ef.ty,r:.1,max:1,color:'#ffd766',life:1});
-        burst(ef.tx,ef.ty,'#ff7a2a',18,{spd:4});
-        burst(ef.tx,ef.ty,'#ffd766',10,{spd:2});
-        scorches.push({x:ef.tx,y:ef.ty,r:ef.scorchR,life:8,elem:'fire'});
-        for(const m of G.monsters)
-          if(m.alive&&cheb(m.x,m.y,Math.floor(ef.tx),Math.floor(ef.ty))<=1)
-            skillHit(m,ef.mult,true);
+        sfx.meteor(); shake=Math.max(shake,ef.dark?12:8);
+        const col1=ef.dark?'#c0392b':'#ff7a2a';
+        const col2=ef.dark?'#ff8a7a':'#ffd766';
+        /* ★ 落地爆炸范围随威力（mult）放大 */
+        const blast=1.6+ef.scorchR+Math.min(ef.mult||1,3)*.2;
+        rings.push({x:ef.tx,y:ef.ty,r:.2,max:blast,color:col1,life:1});
+        rings.push({x:ef.tx,y:ef.ty,r:.1,max:blast*.55,color:col2,life:1});
+        burst(ef.tx,ef.ty,col1,ef.dark?24:18,{spd:4});
+        burst(ef.tx,ef.ty,col2,10,{spd:2});
+        if(!ef.dark)scorches.push({x:ef.tx,y:ef.ty,r:ef.scorchR,life:8,elem:'fire'});
+        if(ef.dark){
+          const pl=G.player;
+          if(cheb(pl.x,pl.y,Math.floor(ef.tx),Math.floor(ef.ty)<=1?Math.floor(ef.ty):Math.floor(ef.ty))){}
+          if(cheb(pl.x,pl.y,Math.floor(ef.tx),Math.floor(ef.ty))<=1)
+            damagePlayer(Math.round(ef.dmg),{name:'暗影陨石'});
+        }else{
+          for(const m of G.monsters)
+            if(m.alive&&cheb(m.x,m.y,Math.floor(ef.tx),Math.floor(ef.ty))<=1)
+              skillHit(m,ef.mult,true,false,true);
+        }
         updateHUD();
         continue;
       }
       const sx=ef.tx+3*(1-ft), sy=ef.ty-5*(1-ft);
+      const c1=ef.dark?'#c0392b':'#ff7a2a';
+      const c2=ef.dark?'#ff8a7a':'#ffe8a0';
+      /* ★ 陨石体积随威力放大 */
+      const msz=TS*(.18+Math.min(ef.mult||1,3)*.07);
       ctx.save();ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle='rgba(255,150,50,.5)';ctx.lineWidth=4;
+      ctx.strokeStyle=ef.dark?'rgba(192,57,43,.6)':'rgba(255,150,50,.5)';ctx.lineWidth=ef.dark?6:4;
       ctx.beginPath();
       ctx.moveTo(sx*TS,sy*TS);
       ctx.lineTo((sx+.9)*TS,(sy+1.5)*TS);
       ctx.stroke();
-      ctx.fillStyle='#ff7a2a';
-      ctx.beginPath();ctx.arc(sx*TS,sy*TS,TS*.3,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#ffe8a0';
-      ctx.beginPath();ctx.arc(sx*TS,sy*TS,TS*.15,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=c1;
+      ctx.beginPath();ctx.arc(sx*TS,sy*TS,msz,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=c2;
+      ctx.beginPath();ctx.arc(sx*TS,sy*TS,msz*.5,0,Math.PI*2);ctx.fill();
       const pul=.4+.3*Math.sin(t*14);
-      ctx.strokeStyle=`rgba(255,122,42,${pul})`;ctx.lineWidth=2;
+      ctx.strokeStyle=ef.dark?`rgba(192,57,43,${pul})`:`rgba(255,122,42,${pul})`;ctx.lineWidth=2;
       ctx.beginPath();ctx.arc(ef.tx*TS,ef.ty*TS,TS*.6,0,Math.PI*2);ctx.stroke();
+      if(ef.dark){
+        ctx.strokeStyle=`rgba(192,57,43,${pul*.5})`;ctx.lineWidth=1.5;
+        ctx.setLineDash([5,5]);
+        ctx.beginPath();ctx.arc(ef.tx*TS,ef.ty*TS,TS*1.2,0,Math.PI*2);ctx.stroke();
+        ctx.setLineDash([]);
+      }
       ctx.restore();
       continue;
     }
@@ -3298,7 +3401,7 @@ function drawEffects(){
         rings.push({x:ef.x,y:ef.y,r:.2,max:1.4,color:'#7ad0ff',life:1});
         for(const m of G.monsters)
           if(m.alive&&cheb(m.x,m.y,Math.floor(ef.x),Math.floor(ef.y))<=1)
-            skillHit(m,ef.power*1.1,true);
+            skillHit(m,ef.power*1.1,true,false,true);
         updateHUD();
       }
       const a=1-pr;
@@ -3342,7 +3445,7 @@ function drawEffects(){
         ef.tick=0;
         for(const m of G.monsters)
           if(m.alive&&cheb(m.x,m.y,Math.floor(ef.x),Math.floor(ef.y))<=ef.r)
-            skillHit(m,ef.power*.35,true);
+            skillHit(m,ef.power*.35,true,false,true);
         if(Math.random()<.5)sfx.zap();
         updateHUD();
       }
@@ -3417,7 +3520,7 @@ function drawEffects(){
           for(const m of G.monsters){
             if(!m.alive)continue;
             if(Math.max(Math.abs(m.x+.5-px),Math.abs(m.y+.5-py))<=.75)
-              skillHit(m,ef.power*.5,true);
+              skillHit(m,ef.power*.5,true,false,true);
           }
           break;
         }
@@ -3431,9 +3534,11 @@ function drawEffects(){
       ctx.setLineDash([]);
       ctx.restore();
     }
+    /* ★ 龙卷：高度随 tier 增高 */
     else if(ef.type==='tornado'){
+      const tier=ef.tier||2;
       ctx.save();ctx.globalCompositeOperation='lighter';
-      const H=3.2;
+      const H=2.6+tier*.3;
       for(let lv=0;lv<14;lv++){
         const h=lv/13;
         const yy=ef.y-h*H*.8-Math.sin(ef.t*3+h*6)*.08;
@@ -3460,7 +3565,7 @@ function drawEffects(){
         ef.tick=0;
         for(const m of G.monsters)
           if(m.alive&&cheb(m.x,m.y,Math.floor(ef.x),Math.floor(ef.y))<=1)
-            skillHit(m,ef.power*.32,true);
+            skillHit(m,ef.power*.32,true,false,true);
         updateHUD();
       }
     }
@@ -3492,9 +3597,9 @@ function drawEffects(){
         burst(tx2,ty2,'#7ad0ff',4,{spd:2,g:.5});
         for(const m of G.monsters){
           if(!m.alive)continue;
-          if(Math.hypot(m.x+.5-tx2,m.y+.5-ty2)<1)skillHit(m,ef.power*.4,true);
+          if(Math.hypot(m.x+.5-tx2,m.y+.5-ty2)<1)skillHit(m,ef.power*.4,true,false,true);
           else if(cheb(m.x,m.y,Math.floor(ef.x),Math.floor(ef.y))<=1)
-            skillHit(m,ef.power*.12,true);
+            skillHit(m,ef.power*.12,true,false,true);
         }
         updateHUD();
       }
@@ -3699,7 +3804,7 @@ function drawEffects(){
         ef.tick=0;
         for(const m of G.monsters)
           if(m.alive&&m.x===Math.floor(ef.x)&&m.y===Math.floor(ef.y))
-            skillHit(m,ef.power,true);
+            skillHit(m,ef.power,true,false,true);
         updateHUD();
       }
     }
@@ -3757,7 +3862,7 @@ function drawEffects(){
           .sort((a,b)=>dist2(a.x,a.y,ef.x,ef.y)-dist2(b.x,b.y,ef.x,ef.y)).slice(0,2);
         for(const m of near){
           addBolt(ef.x,ef.y,m.x+.5,m.y+.2);
-          skillHit(m,ef.power*.35,true);
+          skillHit(m,ef.power*.35,true,false,true);
         }
         if(near.length)sfx.zap();
         updateHUD();
@@ -3780,7 +3885,7 @@ function drawEffects(){
         if(Math.hypot(m.x+.5-ef.x,m.y+.5-ef.y)<=R2){
           ef.hit.add(m);
           burst(m.x+.5,m.y+.5,'#7ad0ff',8,{spd:3,g:.5});
-          skillHit(m,ef.power*.85,true);
+          skillHit(m,ef.power*.85,true,false,true);
         }
       }
     }
@@ -4028,7 +4133,7 @@ function drawEffects(){
         ef.tick=0;
         for(const m of G.monsters)
           if(m.alive&&cheb(m.x,m.y,Math.floor(ef.x),Math.floor(ef.y))<=ef.r)
-            skillHit(m,ef.power*.3,true);
+            skillHit(m,ef.power*.3,true,false,true);
         updateHUD();
       }
     }
@@ -4130,7 +4235,7 @@ function drawEffects(){
         for(const m of G.monsters){
           if(!m.alive||cheb(m.x,m.y,Math.floor(ef.x),Math.floor(ef.y))>1)continue;
           if(ef.exec)execOrHit(m,ef.power,ef.thresh);
-          else skillHit(m,ef.power,true);
+          else skillHit(m,ef.power,true,false,true);
         }
         updateHUD();
       }
@@ -4228,7 +4333,7 @@ function drawEffects(){
         ef.tick=0;
         for(const m of G.monsters)
           if(m.alive&&cheb(m.x,m.y,Math.floor(ef.x),Math.floor(ef.y))<=1)
-            skillHit(m,ef.power*.35,true);
+            skillHit(m,ef.power*.35,true,false,true);
         updateHUD();
       }
     }
@@ -4524,7 +4629,8 @@ function draw(){
     const valid=aimValid();
     for(let yy=aim.y-1;yy<=aim.y+1;yy++)for(let xx=aim.x-1;xx<=aim.x+1;xx++){
       if(xx<0||yy<0||xx>=MAP_W||yy>=MAP_H)continue;
-      ctx.fillStyle=valid?'rgba(174,240,255,.18)':'rgba(120,60,60,.15)';
+      const isIce=SKILLS[aim.i].id==='ice';
+      ctx.fillStyle=valid?(isIce?'rgba(174,240,255,.18)':'rgba(255,122,42,.18)'):'rgba(120,60,60,.15)';
       ctx.fillRect(xx*TS,yy*TS,TS,TS);
     }
     const pul=.6+.4*Math.sin(t*8);
@@ -4562,6 +4668,34 @@ function draw(){
     ctx.restore();
     ctx.fillStyle=`rgba(232,201,106,${.6*l*pul})`;
     ctx.beginPath();ctx.arc(ccx,ccy,3,0,Math.PI*2);ctx.fill();
+    if(G.eliteAlive){
+      const lp=.5+.5*Math.sin(t*3);
+      ctx.save();
+      ctx.translate(ccx,ccy);
+      ctx.strokeStyle=`rgba(192,57,43,${.55+.35*lp})`;
+      ctx.lineWidth=3;
+      for(let k=0;k<4;k++){
+        const a=k/4*Math.PI*2+.6;
+        const r1=TS*.28,r2=TS*.62;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*r1,Math.sin(a)*r1);
+        ctx.lineTo(Math.cos(a)*r2,Math.sin(a)*r2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(Math.cos(a)*r2,Math.sin(a)*r2,3,0,Math.PI*2);
+        ctx.stroke();
+      }
+      ctx.strokeStyle=`rgba(192,57,43,${.35*lp})`;
+      ctx.lineWidth=1.5;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.arc(0,0,TS*.5,t*.8,t*.8+Math.PI*2);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=`rgba(255,80,60,${.5+.4*lp})`;
+      ctx.font=`800 ${TS*.5|0}px Cinzel,serif`;
+      ctx.textAlign='center';
+      ctx.fillText('✕',0,TS*.18);
+      ctx.restore();
+    }
   }
   for(const it of G.items){
     if(!G.explored[it.y][it.x])continue;
@@ -4730,7 +4864,10 @@ function draw(){
     ctx.beginPath();ctx.arc(x*TS,y*TS,size*2,0,Math.PI*2);ctx.fill();
     if(pr.big){
       const bx=lerp(pr.x0,pr.x1,Math.max(0,pr.p-.12));
-      ctx.fillStyle=pr.color==='#aef0ff'?'rgba(220,245,255,.35)':'rgba(255,200,100,.35)';
+      if(pr.color==='#aef0ff')
+        ctx.fillStyle='rgba(220,245,255,.35)';
+      else
+        ctx.fillStyle='rgba(255,200,100,.35)';
       ctx.beginPath();ctx.arc(bx*TS,y*TS,size*.8,0,Math.PI*2);ctx.fill();
     }
     ctx.restore();
@@ -5055,7 +5192,6 @@ function drawMob(m,cx,cy,t){
       ctx.beginPath();ctx.moveTo(0,-12*s);ctx.lineTo(4*s,-7*s);ctx.stroke();
       ctx.restore();
       break;}
-    /* 训练假人：木桩靶子 */
     case 'dummy':{
       const pul=.5+.5*Math.sin(t*2+m.seed);
       ctx.fillStyle='#3a2f22';
@@ -5188,6 +5324,12 @@ function loop(ts){
       if(G.player.hp>0)fusionBurst();
       else{casting=null;document.getElementById('castTip').style.display='none';}
     }
+  }
+  /* ★ Boss死亡保险：任何状态下只要标记存在且可结算就立即胜利 */
+  if(G&&G.bossDead&&state==='play'&&!casting){
+    /* 若 setTimeout 因面板状态被吞掉，此处兜底 */
+    if(!G.monsters.some(m=>m.alive&&m.boss))setTimeout(win,1200);
+    G.bossDead=false; /* 防重复 */
   }
   if(heldDir&&state==='play'&&!aim&&!casting){
     holdTimer+=16;
